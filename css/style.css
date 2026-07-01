@@ -481,6 +481,18 @@ img { max-width: 100%; display: block; }
   font-family: 'Inter', sans-serif;
 }
 
+.story-plaka {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--border-light);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 7px;
+  font-family: 'Inter', monospace;
+  letter-spacing: 0.04em;
+}
+
 /* ===== İLÇE DETAY — okunabilirlik ===== */
 .ilce-body {
   max-width: 780px;
