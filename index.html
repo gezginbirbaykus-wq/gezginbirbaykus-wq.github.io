@@ -59,7 +59,7 @@
 
   <script type="module">
     import { db } from './js/firebase-config.js';
-    import { collection, getDocs, orderBy, query } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     // Gece modu
     const toggle = document.getElementById('theme-toggle');
@@ -76,8 +76,7 @@
 
     async function ulkeleriYukle() {
       try {
-        const q = query(collection(db, 'ulkeler'), orderBy('sira'));
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection(db, 'ulkeler'));
 
         if (snapshot.empty) {
           liste.innerHTML = `
@@ -88,11 +87,20 @@
           return;
         }
 
+        // Türkiye önce, geri kalanlar alfabetik
+        const ulkeler = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        ulkeler.sort((a, b) => {
+          const aTr = a.ad.replace(/^[^a-zA-ZğüşıöçĞÜŞİÖÇ]+/, '').toLowerCase().startsWith('türkiye');
+          const bTr = b.ad.replace(/^[^a-zA-ZğüşıöçĞÜŞİÖÇ]+/, '').toLowerCase().startsWith('türkiye');
+          if (aTr && !bTr) return -1;
+          if (!aTr && bTr) return 1;
+          return a.ad.localeCompare(b.ad, 'tr');
+        });
+
         liste.innerHTML = '';
-        snapshot.forEach(doc => {
-          const d = doc.data();
+        ulkeler.forEach(d => {
           liste.innerHTML += `
-            <a href="ulke.html?id=${doc.id}" class="card">
+            <a href="ulke.html?id=${d.id}" class="card">
               <div class="card-img">
                 ${d.fotograf ? `<img src="${d.fotograf}" alt="${d.ad}" />` : '🌍'}
               </div>

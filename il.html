@@ -114,7 +114,7 @@
       snapshot.forEach(d => {
         ilceler.push({ id: d.id, ...d.data() });
       });
-      ilceler.sort((a, b) => (a.sira || 999) - (b.sira || 999));
+      ilceler.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
       
       ilceler.forEach(d => {
         const ilce = d;

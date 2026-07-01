@@ -103,7 +103,7 @@
       snapshot.forEach(d => {
         iller.push({ id: d.id, ...d.data() });
       });
-      iller.sort((a, b) => (a.sira || 999) - (b.sira || 999));
+      iller.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
       
       iller.forEach(il => {
         liste.innerHTML += `
