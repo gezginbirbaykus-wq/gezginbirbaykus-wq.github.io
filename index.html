@@ -17,10 +17,13 @@
         <img src="assets/logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
         <span class="logo-text">Gezginbirbaykus</span>
       </a>
-      <nav class="main-nav">
-        <a href="index.html" class="active">Ana Sayfa</a>
-        <a href="#ulkeler">Keşfet</a>
-      </nav>
+      <div class="header-right">
+        <nav class="main-nav">
+          <a href="index.html" class="active">Ana Sayfa</a>
+          <a href="#ulkeler">Keşfet</a>
+        </nav>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
+      </div>
     </div>
   </header>
 
@@ -57,6 +60,17 @@
   <script type="module">
     import { db } from './js/firebase-config.js';
     import { collection, getDocs, orderBy, query } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    // Gece modu
+    const toggle = document.getElementById('theme-toggle');
+    const saved = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    toggle.addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
 
     const liste = document.getElementById('ulke-listesi');
 
