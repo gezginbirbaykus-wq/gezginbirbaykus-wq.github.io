@@ -37,9 +37,19 @@
   </div>
 
   <!-- HERO -->
-  <section class="page-hero" id="ilce-hero" style="display:none;">
-    <h1 id="ilce-ad"></h1>
-    <p class="subtitle" id="ilce-il-adi"></p>
+  <section id="ilce-hero" style="display:none;">
+    <div class="ilce-kapak" id="ilce-kapak" style="display:none;">
+      <img id="ilce-kapak-foto" src="" alt="" />
+      <div class="ilce-kapak-overlay"></div>
+      <div class="ilce-kapak-icerik">
+        <h1 id="ilce-ad"></h1>
+        <p class="subtitle" id="ilce-il-adi"></p>
+      </div>
+    </div>
+    <div class="ilce-hero-no-foto" id="ilce-hero-no-foto">
+      <h1 id="ilce-ad-yedek"></h1>
+      <p class="subtitle" id="ilce-il-adi-yedek"></p>
+    </div>
   </section>
 
   <!-- CONTENT -->
@@ -48,7 +58,7 @@
     <!-- Tanıtım -->
     <div class="ilce-section">
       <h2>📖 Tanıtım</h2>
-      <p class="ilce-description" id="ilce-aciklama"></p>
+      <div class="ilce-description" id="ilce-aciklama"></div>
     </div>
 
     <!-- Harita -->
@@ -110,14 +120,55 @@
       if (!ilceDoc.exists()) { window.location = 'index.html'; return; }
 
       const ilce = ilceDoc.data();
+      const icerikFotolar = ilce.icerikFotolar || [];
 
       document.title = `${ilce.ad} — Gezginbirbaykus`;
       document.getElementById('bc-ilce').textContent = ilce.ad;
-      document.getElementById('ilce-ad').textContent = ilce.ad;
-      document.getElementById('ilce-aciklama').textContent = ilce.aciklama || '';
+
+      // Kapak fotosu varsa tam ekran hero, yoksa normal hero
+      if (ilce.fotograf) {
+        document.getElementById('ilce-kapak-foto').src = ilce.fotograf;
+        document.getElementById('ilce-kapak-foto').alt = ilce.ad;
+        document.getElementById('ilce-ad').textContent = ilce.ad;
+        document.getElementById('ilce-kapak').style.display = '';
+        document.getElementById('ilce-hero-no-foto').style.display = 'none';
+      } else {
+        document.getElementById('ilce-ad-yedek').textContent = ilce.ad;
+        document.getElementById('ilce-kapak').style.display = 'none';
+        document.getElementById('ilce-hero-no-foto').style.display = '';
+      }
+
       document.getElementById('ilce-hero').style.display = '';
       document.getElementById('ilce-icerik').style.display = '';
       document.getElementById('yukleniyor').style.display = 'none';
+
+      // Tanıtım yazısını [foto:N] etiketleriyle render et
+      const aciklama = ilce.aciklama || '';
+      const parcalar = aciklama.split(/(\[foto:\d+\])/g);
+      const aciklamaEl = document.getElementById('ilce-aciklama');
+      aciklamaEl.innerHTML = '';
+      parcalar.forEach(parca => {
+        const fotoMatch = parca.match(/^\[foto:(\d+)\]$/);
+        if (fotoMatch) {
+          const idx = parseInt(fotoMatch[1]) - 1;
+          if (icerikFotolar[idx]) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'icerik-foto-wrapper';
+            const img = document.createElement('img');
+            img.src = icerikFotolar[idx];
+            img.alt = `Fotoğraf ${idx + 1}`;
+            img.className = 'icerik-foto';
+            img.loading = 'lazy';
+            wrapper.appendChild(img);
+            aciklamaEl.appendChild(wrapper);
+          }
+        } else if (parca.trim()) {
+          const p = document.createElement('p');
+          p.className = 'ilce-description';
+          p.textContent = parca;
+          aciklamaEl.appendChild(p);
+        }
+      });
 
       // Breadcrumb - İl
       if (ilce.ilId) {
@@ -128,6 +179,7 @@
           ilLink.textContent = il.ad;
           ilLink.href = `il.html?id=${ilce.ilId}`;
           document.getElementById('ilce-il-adi').textContent = il.ad;
+          document.getElementById('ilce-il-adi-yedek').textContent = il.ad;
 
           // Breadcrumb - Ülke
           if (il.ulkeId) {

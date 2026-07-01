@@ -179,7 +179,7 @@
               <textarea id="ilce-aciklama" required placeholder="İlçeyi tanıtın..."></textarea>
             </div>
             <div class="form-group">
-              <label>Fotoğraf</label>
+              <label>Kapak Fotoğrafı <small style="font-weight:400;text-transform:none;">(story kartında görünür)</small></label>
               <div class="upload-area" id="ilce-upload-area">
                 <input type="file" id="ilce-fotograf-dosya" accept="image/*" class="upload-input" />
                 <div class="upload-placeholder">
@@ -192,6 +192,19 @@
                 </div>
               </div>
               <input type="hidden" id="ilce-fotograf" />
+            </div>
+
+            <div class="form-group">
+              <label>İçerik Fotoğrafları <small style="font-weight:400;text-transform:none;">(yazıda [foto:1], [foto:2]... ile kullan)</small></label>
+              <div id="icerik-foto-listesi" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px;"></div>
+              <div class="upload-area" id="icerik-upload-area" style="cursor:pointer;">
+                <input type="file" id="icerik-fotograf-dosya" accept="image/*" class="upload-input" multiple />
+                <div class="upload-placeholder">
+                  <span class="upload-icon">🖼️</span>
+                  <span>Fotoğraf ekle (birden fazla seçebilirsin)</span>
+                </div>
+              </div>
+              <input type="hidden" id="ilce-icerik-fotolar" />
             </div>
             <div class="form-group">
               <label>Google Maps Embed URL</label>
@@ -333,6 +346,51 @@
     uploadDinle('ulke');
     uploadDinle('il');
     uploadDinle('ilce');
+
+    // ===== İÇERİK FOTOĞRAFLARI =====
+    let icerikFotolar = []; // [{url, preview}]
+
+    document.getElementById('icerik-fotograf-dosya').addEventListener('change', async (e) => {
+      const dosyalar = Array.from(e.target.files);
+      if (!dosyalar.length) return;
+      renderIcerikFotoPlaceholders(dosyalar.length);
+      for (const dosya of dosyalar) {
+        const url = await cloudinaryYukle(dosya);
+        icerikFotolar.push(url);
+        renderIcerikFotoListesi();
+      }
+      e.target.value = '';
+    });
+
+    function renderIcerikFotoPlaceholders(sayi) {
+      // Upload sırasında bekleme göstergesi
+    }
+
+    function renderIcerikFotoListesi() {
+      const liste = document.getElementById('icerik-foto-listesi');
+      document.getElementById('ilce-icerik-fotolar').value = JSON.stringify(icerikFotolar);
+      if (!icerikFotolar.length) { liste.innerHTML = ''; return; }
+      liste.innerHTML = icerikFotolar.map((url, i) => `
+        <div class="icerik-foto-item">
+          <img src="${url}" alt="foto ${i+1}" />
+          <div class="icerik-foto-info">
+            <span class="icerik-foto-etiket">[foto:${i+1}]</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);">Yazıya kopyala</span>
+          </div>
+          <button type="button" class="upload-remove" style="position:static;width:28px;height:28px;" onclick="icerikFotoKaldir(${i})">✕</button>
+        </div>`).join('');
+    }
+
+    window.icerikFotoKaldir = (i) => {
+      icerikFotolar.splice(i, 1);
+      renderIcerikFotoListesi();
+    };
+
+    function icerikFotolariSifirla() {
+      icerikFotolar = [];
+      renderIcerikFotoListesi();
+      document.getElementById('ilce-icerik-fotolar').value = '';
+    }
 
     // ===== HELPERS =====
     function goster(alertId, mesaj, tip = 'success') {
@@ -620,7 +678,11 @@
       document.getElementById('ilce-harita').value = ilce.haritaEmbed || '';
       document.getElementById('ilce-instagram').value = ilce.instagram || '';
 
-      // Mevcut fotoğraf varsa göster
+      // Mevcut içerik fotoğrafları
+      icerikFotolar = ilce.icerikFotolar || [];
+      renderIcerikFotoListesi();
+
+      // Mevcut kapak fotoğraf varsa göster
       if (ilce.fotograf) {
         document.getElementById('ilce-fotograf-img').src = ilce.fotograf;
         document.getElementById('ilce-fotograf-preview').style.display = '';
@@ -646,6 +708,7 @@
       document.getElementById('ilce-kaydet-btn').textContent = 'İlçe Ekle';
       document.getElementById('ilce-iptal-btn').style.display = 'none';
       fotografKaldir('ilce');
+      icerikFotolariSifirla();
     });
 
     document.getElementById('ilce-form').addEventListener('submit', async e => {
@@ -665,6 +728,7 @@
           ad: document.getElementById('ilce-ad').value.trim(),
           aciklama: document.getElementById('ilce-aciklama').value.trim(),
           fotograf: fotografUrl,
+          icerikFotolar: icerikFotolar,
           haritaEmbed: document.getElementById('ilce-harita').value.trim(),
           instagram: document.getElementById('ilce-instagram').value.trim()
         };
@@ -682,6 +746,7 @@
         }
         e.target.reset();
         fotografKaldir('ilce');
+        icerikFotolariSifirla();
         await ilceleriYukle();
       } catch (err) {
         goster('ilce-alert', 'Hata: ' + err.message, 'error');

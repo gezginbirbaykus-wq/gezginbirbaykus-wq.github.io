@@ -488,14 +488,135 @@ img { max-width: 100%; display: block; }
   padding: 60px 32px 100px;
 }
 
+/* Kapak fotosu hero */
+.ilce-kapak {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
+}
+
+.ilce-kapak img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ilce-kapak-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+}
+
+.ilce-kapak-icerik {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  padding: 32px 40px;
+  color: #fff;
+  z-index: 1;
+}
+
+.ilce-kapak-icerik h1 {
+  font-family: 'Sanchez', serif;
+  font-size: 2.8rem;
+  font-style: italic;
+  margin-bottom: 6px;
+  line-height: 1.15;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.ilce-kapak-icerik .subtitle {
+  font-size: 1rem;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* Kapak fotosu yoksa normal hero */
+.ilce-hero-no-foto {
+  background: var(--hero-bg);
+  color: var(--hero-text);
+  padding: 68px 24px 60px;
+  text-align: center;
+}
+
+.ilce-hero-no-foto h1 {
+  font-family: 'Sanchez', serif;
+  font-size: 2.6rem;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+
+.ilce-hero-no-foto .subtitle {
+  font-size: 1rem;
+  opacity: 0.72;
+  font-weight: 300;
+}
+
 .ilce-description {
   font-size: 1.1rem;
   line-height: 2;
   color: var(--text-main);
-  margin-bottom: 56px;
+  margin-bottom: 24px;
   white-space: pre-wrap;
   font-weight: 400;
   letter-spacing: 0.01em;
+}
+
+/* İçerik fotoğrafları */
+.icerik-foto-wrapper {
+  margin: 32px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+.icerik-foto {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 520px;
+  object-fit: cover;
+}
+
+/* Admin içerik foto listesi */
+.icerik-foto-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.icerik-foto-item img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.icerik-foto-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.icerik-foto-etiket {
+  font-family: 'Inter', monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--brown);
+  background: var(--brown-10);
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+  cursor: pointer;
+  user-select: all;
 }
 
 .ilce-section { margin-bottom: 48px; }
