@@ -201,46 +201,29 @@ img { max-width: 100%; display: block; }
 .hero-content { position: relative; z-index: 1; }
 
 .hero-logo-wrap {
-  width: 136px;
-  height: 156px;
+  width: 150px;
+  height: 150px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 0 auto 28px;
-  background: #1A1208;
-  border-radius: 10px;
-  padding: 14px 12px 10px;
-  gap: 8px;
+  background: #000000;
+  border-radius: 12px;
+  padding: 8px;
 }
 
 .hero-logo-wrap img {
-  width: 100px;
-  height: 100px;
+  width: 134px;
+  height: 134px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
 }
 
-.hero-logo-wrap .hero-logo-text {
-  font-family: 'Sanchez', serif;
-  font-size: 0.68rem;
-  font-style: italic;
-  color: #ffffff;
-  letter-spacing: 0.1em;
-  text-align: center;
-  white-space: nowrap;
-}
-
-[data-theme="dark"] .hero-logo-wrap {
-  background: #000000;
-}
-
-/* Gece modunda Logo2 göster */
-.hero-logo-light { display: block; }
-.hero-logo-dark  { display: none; }
+/* açık modda Logo2 her zaman göster, dark/light class'ları gerekmez */
+.hero-logo-light { display: none; }
+.hero-logo-dark  { display: block; }
 
 [data-theme="dark"] .hero-logo-light { display: none; }
-[data-theme="dark"] .hero-logo-dark  { display: block; width: 100px; height: 100px; object-fit: contain; filter: none; }
+[data-theme="dark"] .hero-logo-dark  { display: block; }
 
 .hero h1 {
   font-family: 'Sanchez', serif;
