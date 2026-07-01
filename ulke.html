@@ -42,7 +42,7 @@
   <!-- MAIN -->
   <main class="main-content">
     <h2 class="section-title" id="iller-baslik">İller</h2>
-    <div id="il-listesi" class="cards-grid">
+    <div id="il-listesi" class="story-grid">
       <div class="loading">
         <div class="spinner"></div>
         <p>Yükleniyor...</p>
@@ -107,17 +107,13 @@
       
       iller.forEach(il => {
         liste.innerHTML += `
-          <a href="il.html?id=${il.id}" class="card">
-            <div class="card-img">
-              ${il.fotograf ? `<img src="${il.fotograf}" alt="${il.ad}" />` : '🏙️'}
+          <a href="il.html?id=${il.id}" class="story-card">
+            <div class="story-ring">
+              <div class="story-inner">
+                ${il.fotograf ? `<img src="${il.fotograf}" alt="${il.ad}" />` : '🏙️'}
+              </div>
             </div>
-            <div class="card-body">
-              <h3>${il.ad}</h3>
-              <p>${il.aciklama || ''}</p>
-            </div>
-            <div class="card-footer">
-              <span class="card-link">İlçeleri Gör →</span>
-            </div>
+            <span class="story-name">${il.ad}</span>
           </a>`;
       });
     }

@@ -43,7 +43,7 @@
   <!-- MAIN -->
   <main class="main-content">
     <h2 class="section-title" id="ilceler-baslik">İlçeler</h2>
-    <div id="ilce-listesi" class="cards-grid">
+    <div id="ilce-listesi" class="story-grid">
       <div class="loading">
         <div class="spinner"></div>
         <p>Yükleniyor...</p>
@@ -119,17 +119,13 @@
       ilceler.forEach(d => {
         const ilce = d;
         liste.innerHTML += `
-          <a href="ilce.html?id=${d.id}" class="card">
-            <div class="card-img">
-              ${ilce.fotograf ? `<img src="${ilce.fotograf}" alt="${ilce.ad}" />` : '📍'}
+          <a href="ilce.html?id=${d.id}" class="story-card">
+            <div class="story-ring">
+              <div class="story-inner">
+                ${ilce.fotograf ? `<img src="${ilce.fotograf}" alt="${ilce.ad}" />` : '📍'}
+              </div>
             </div>
-            <div class="card-body">
-              <h3>${ilce.ad}</h3>
-              <p>${(ilce.aciklama || '').substring(0, 120)}${ilce.aciklama && ilce.aciklama.length > 120 ? '...' : ''}</p>
-            </div>
-            <div class="card-footer">
-              <span class="card-link">Tanıtımı Oku →</span>
-            </div>
+            <span class="story-name">${ilce.ad}</span>
           </a>`;
       });
     }

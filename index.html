@@ -42,7 +42,7 @@
   <main class="main-content" id="ulkeler">
     <h2 class="section-title">Ülkeler</h2>
 
-    <div id="ulke-listesi" class="cards-grid">
+    <div id="ulke-listesi" class="story-grid">
       <!-- Yükleniyor -->
       <div class="loading">
         <div class="spinner"></div>
@@ -100,17 +100,13 @@
         liste.innerHTML = '';
         ulkeler.forEach(d => {
           liste.innerHTML += `
-            <a href="ulke.html?id=${d.id}" class="card">
-              <div class="card-img">
-                ${d.fotograf ? `<img src="${d.fotograf}" alt="${d.ad}" />` : '🌍'}
+            <a href="ulke.html?id=${d.id}" class="story-card">
+              <div class="story-ring">
+                <div class="story-inner">
+                  ${d.fotograf ? `<img src="${d.fotograf}" alt="${d.ad}" />` : '🌍'}
+                </div>
               </div>
-              <div class="card-body">
-                <h3>${d.ad}</h3>
-                <p>${d.aciklama || ''}</p>
-              </div>
-              <div class="card-footer">
-                <span class="card-link">Keşfet →</span>
-              </div>
+              <span class="story-name">${d.ad}</span>
             </a>`;
         });
       } catch (err) {
