@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <base href="/gezginbirbaykus/" />
   <title>Gezginbirbaykus</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
 </head>
 <body>
 
   <!-- HEADER -->
   <header class="site-header">
     <div class="header-inner">
-      <a href="index.html" class="logo-area">
-        <img src="assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
+      <a href="./index.html" class="logo-area">
+        <img src="./assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
         <span class="logo-text">Gezginbirbaykus</span>
       </a>
       <div class="header-right">
         <nav class="main-nav">
-          <a href="index.html">Ana Sayfa</a>
-          <a href="index.html#ulkeler">Keşfet</a>
+          <a href="./index.html">Ana Sayfa</a>
+          <a href="./index.html#ulkeler">Keşfet</a>
         </nav>
         <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
       </div>
@@ -29,7 +28,7 @@
 
   <!-- BREADCRUMB -->
   <div class="breadcrumb" id="breadcrumb">
-    <a href="index.html">Ana Sayfa</a>
+    <a href="./index.html">Ana Sayfa</a>
     <span>/</span>
     <span id="bc-ulke">Yükleniyor...</span>
   </div>
@@ -79,11 +78,11 @@
     const ulkeId = params.get('id');
 
     async function yukle() {
-      if (!ulkeId) { window.location = 'index.html'; return; }
+      if (!ulkeId) { window.location = './index.html'; return; }
 
       // Ülke bilgisi
       const ulkeDoc = await getDoc(doc(db, 'ulkeler', ulkeId));
-      if (!ulkeDoc.exists()) { window.location = 'index.html'; return; }
+      if (!ulkeDoc.exists()) { window.location = './index.html'; return; }
 
       const ulke = ulkeDoc.data();
       document.title = `${ulke.ad} — Gezginbirbaykus`;
@@ -112,7 +111,7 @@
       
       iller.forEach(il => {
         liste.innerHTML += `
-          <a href="il.html?id=${il.id}" class="story-card">
+          <a href="./il.html?id=${il.id}" class="story-card">
             <div class="story-ring">
               <div class="story-inner">
                 ${il.fotograf ? `<img src="${il.fotograf}" alt="${il.ad}" />` : '🏙️'}

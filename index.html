@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <base href="/gezginbirbaykus/" />
   <title>Gezginbirbaykus — Türkiye'yi Keşfet</title>
   <meta name="description" content="Türkiye'nin illerini ve ilçelerini keşfet. Gezginbirbaykus ile her köşeyi tanı." />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
 </head>
 <body>
 
   <!-- HEADER -->
   <header class="site-header">
     <div class="header-inner">
-      <a href="index.html" class="logo-area">
-        <img src="assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
+      <a href="./index.html" class="logo-area">
+        <img src="./assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
         <span class="logo-text">Gezginbirbaykus</span>
       </a>
       <div class="header-right">
         <nav class="main-nav">
-          <a href="index.html" class="active">Ana Sayfa</a>
+          <a href="./index.html" class="active">Ana Sayfa</a>
           <a href="#kesfet">Keşfet</a>
         </nav>
         <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
@@ -32,8 +31,8 @@
   <section class="hero">
     <div class="hero-content">
       <div class="hero-logo-wrap">
-        <img src="assets/Logo.png" alt="Gezginbirbaykus" class="hero-logo-light" onerror="this.style.display='none'" />
-        <img src="assets/Logo2.png" alt="Gezginbirbaykus" class="hero-logo-dark" onerror="this.style.display='none'" />
+        <img src="./assets/Logo.png" alt="Gezginbirbaykus" class="hero-logo-light" onerror="this.style.display='none'" />
+        <img src="./assets/Logo2.png" alt="Gezginbirbaykus" class="hero-logo-dark" onerror="this.style.display='none'" />
       </div>
       <h1>Dünyanın her ilçesini gezmek isteyen bir baykuş.</h1>
     </div>
@@ -147,7 +146,7 @@
                         ${ilIlceler.length === 0
                           ? '<p class="akordeon-bos">Henüz ilçe eklenmemiş.</p>'
                           : `<div class="story-grid akordeon-story">${ilIlceler.map(ilce => `
-                            <a href="ilce.html?id=${ilce.id}" class="story-card">
+                            <a href="./ilce.html?id=${ilce.id}" class="story-card">
                               <div class="story-ring">
                                 <div class="story-inner">
                                   ${ilce.fotograf ? `<img src="${ilce.fotograf}" alt="${ilce.ad}" />` : '📍'}

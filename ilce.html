@@ -3,23 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <base href="/gezginbirbaykus/" />
   <title>Gezginbirbaykus</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="icon" href="./assets/favicon.ico" type="image/x-icon" />
 </head>
 <body>
 
   <!-- HEADER -->
   <header class="site-header">
     <div class="header-inner">
-      <a href="index.html" class="logo-area">
-        <img src="assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
+      <a href="./index.html" class="logo-area">
+        <img src="./assets/Logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
         <span class="logo-text">Gezginbirbaykus</span>
       </a>
       <div class="header-right">
         <nav class="main-nav">
-          <a href="index.html">Ana Sayfa</a>
+          <a href="./index.html">Ana Sayfa</a>
         </nav>
         <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
       </div>
@@ -28,7 +27,7 @@
 
   <!-- BREADCRUMB -->
   <div class="breadcrumb">
-    <a href="index.html">Ana Sayfa</a>
+    <a href="./index.html">Ana Sayfa</a>
     <span>/</span>
     <a href="#" id="bc-ulke-link">Ülke</a>
     <span>/</span>
@@ -115,10 +114,10 @@
     const ilceId = params.get('id');
 
     async function yukle() {
-      if (!ilceId) { window.location = 'index.html'; return; }
+      if (!ilceId) { window.location = './index.html'; return; }
 
       const ilceDoc = await getDoc(doc(db, 'ilceler', ilceId));
-      if (!ilceDoc.exists()) { window.location = 'index.html'; return; }
+      if (!ilceDoc.exists()) { window.location = './index.html'; return; }
 
       const ilce = ilceDoc.data();
       const icerikFotolar = ilce.icerikFotolar || [];
@@ -178,7 +177,7 @@
           const il = ilDoc.data();
           const ilLink = document.getElementById('bc-il-link');
           ilLink.textContent = il.ad;
-          ilLink.href = `il.html?id=${ilce.ilId}`;
+          ilLink.href = `./il.html?id=${ilce.ilId}`;
           document.getElementById('ilce-il-adi').textContent = il.ad;
           document.getElementById('ilce-il-adi-yedek').textContent = il.ad;
 
@@ -188,7 +187,7 @@
             if (ulkeDoc.exists()) {
               const ulkeLink = document.getElementById('bc-ulke-link');
               ulkeLink.textContent = ulkeDoc.data().ad;
-              ulkeLink.href = `ulke.html?id=${il.ulkeId}`;
+              ulkeLink.href = `./ulke.html?id=${il.ulkeId}`;
             }
           }
         }
