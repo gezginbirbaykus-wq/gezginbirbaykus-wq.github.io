@@ -166,6 +166,14 @@
           // Ülke toggle
           const ulkeBtn = ulkeEl.querySelector('.akordeon-ulke-btn');
           const ulkeIllerDiv = ulkeEl.querySelector('.akordeon-iller');
+          
+          // İlk ülkeyi otomatik aç
+          if (root.children.length === 1) {
+            ulkeBtn.setAttribute('aria-expanded', 'true');
+            ulkeBtn.classList.add('acik');
+            ulkeIllerDiv.removeAttribute('hidden');
+          }
+
           ulkeBtn.addEventListener('click', () => {
             const acik = ulkeBtn.getAttribute('aria-expanded') === 'true';
             ulkeBtn.setAttribute('aria-expanded', !acik);
