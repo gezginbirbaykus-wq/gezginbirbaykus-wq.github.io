@@ -178,31 +178,41 @@
             <div class="form-group">
               <label>Tanıtım Yazısı *</label>
               <div class="editor-toolbar">
-                <select class="editor-select" id="editor-font" onchange="editorFontUygula(this.value)">
-                  <option value="">Font</option>
+                <select class="editor-select" id="editor-font">
+                  <option value="">— Font —</option>
                   <option value="Inter">Inter</option>
                   <option value="Sanchez">Sanchez</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Calibri">Calibri</option>
                 </select>
-                <select class="editor-select" id="editor-punto" onchange="editorPuntoUygula(this.value)">
-                  <option value="">Punto</option>
-                  <option value="0.8rem">Küçük</option>
-                  <option value="1rem">Normal</option>
-                  <option value="1.15rem">Orta</option>
-                  <option value="1.35rem">Büyük</option>
-                  <option value="1.6rem">Daha Büyük</option>
-                  <option value="2rem">Başlık</option>
+                <select class="editor-select" id="editor-punto">
+                  <option value="">— Punto —</option>
+                  <option value="10">10</option>
+                  <option value="11">11</option>
+                  <option value="12">12</option>
+                  <option value="13">13</option>
+                  <option value="14">14</option>
+                  <option value="15">15</option>
+                  <option value="16">16</option>
+                  <option value="18">18</option>
+                  <option value="20">20</option>
+                  <option value="24">24</option>
+                  <option value="28">28</option>
+                  <option value="32">32</option>
+                  <option value="36">36</option>
                 </select>
                 <div class="editor-sep"></div>
-                <button type="button" class="editor-btn" onclick="editorKomut('bold')" title="Kalın"><b>B</b></button>
-                <button type="button" class="editor-btn editor-italic" onclick="editorKomut('italic')" title="İtalik"><i>I</i></button>
-                <button type="button" class="editor-btn editor-underline" onclick="editorKomut('underline')" title="Altı Çizili"><u>U</u></button>
+                <button type="button" class="editor-btn" id="btn-bold" onclick="editorToggle('bold')" title="Kalın"><b>B</b></button>
+                <button type="button" class="editor-btn editor-italic" id="btn-italic" onclick="editorToggle('italic')" title="İtalik"><i>I</i></button>
+                <button type="button" class="editor-btn editor-underline" id="btn-underline" onclick="editorToggle('underline')" title="Altı Çizili"><u>U</u></button>
                 <div class="editor-sep"></div>
-                <button type="button" class="editor-btn" onclick="editorKomut('justifyLeft')" title="Sola">⬅</button>
-                <button type="button" class="editor-btn" onclick="editorKomut('justifyCenter')" title="Ortala">↔</button>
-                <button type="button" class="editor-btn" onclick="editorKomut('justifyRight')" title="Sağa">➡</button>
+                <button type="button" class="editor-btn" onclick="document.execCommand('justifyLeft')" title="Sola">⬅</button>
+                <button type="button" class="editor-btn" onclick="document.execCommand('justifyCenter')" title="Ortala">↔</button>
+                <button type="button" class="editor-btn" onclick="document.execCommand('justifyRight')" title="Sağa">➡</button>
                 <div class="editor-sep"></div>
                 <button type="button" class="editor-btn editor-foto-ekle" onclick="editorFotoEkle()" title="[foto:N] ekle">📷</button>
-                <button type="button" class="editor-btn editor-temizle" onclick="editorTemizle()" title="Formatı temizle">✕ Format</button>
+                <button type="button" class="editor-btn editor-temizle" onclick="editorTemizle()" title="Formatı temizle">✕</button>
               </div>
               <div id="ilce-aciklama-editor" class="editor-alan" contenteditable="true" data-placeholder="İlçeyi tanıtın..."></div>
               <textarea id="ilce-aciklama" style="display:none;"></textarea>
@@ -402,50 +412,80 @@
     // ===== ZENGİN METİN EDİTÖRÜ =====
     const editor = document.getElementById('ilce-aciklama-editor');
     const editorHidden = document.getElementById('ilce-aciklama');
+    const fontSelect = document.getElementById('editor-font');
+    const puntoSelect = document.getElementById('editor-punto');
 
-    editor.addEventListener('input', () => {
-      editorHidden.value = editor.innerHTML;
-    });
-
-    function editorKomut(komut) {
-      editor.focus();
-      document.execCommand(komut, false, null);
+    function editorGuncelle() {
       editorHidden.value = editor.innerHTML;
     }
-    window.editorKomut = editorKomut;
 
-    // Font uygula — seçili metne span ekle
-    window.editorFontUygula = (font) => {
+    editor.addEventListener('input', editorGuncelle);
+
+    // İmleç pozisyonundaki stili oku → select'leri güncelle
+    editor.addEventListener('keyup', editorDurumGuncelle);
+    editor.addEventListener('mouseup', editorDurumGuncelle);
+
+    function editorDurumGuncelle() {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const node = sel.anchorNode?.parentElement;
+      if (!node) return;
+
+      // Font bul
+      const font = window.getComputedStyle(node).fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+      const fontOpts = [...fontSelect.options].map(o => o.value.toLowerCase());
+      const fontIdx = fontOpts.indexOf(font.toLowerCase());
+      fontSelect.selectedIndex = fontIdx >= 0 ? fontIdx : 0;
+
+      // Punto bul (px → pt yaklaşık)
+      const pxStr = window.getComputedStyle(node).fontSize;
+      const px = parseFloat(pxStr);
+      const pt = Math.round(px * 0.75);
+      const ptOpts = [...puntoSelect.options].map(o => parseInt(o.value));
+      const closest = ptOpts.reduce((prev, curr) => Math.abs(curr - pt) < Math.abs(prev - pt) ? curr : prev, ptOpts[1] || 12);
+      puntoSelect.value = closest || '';
+
+      // Bold/italic/underline butonlarını güncelle
+      document.getElementById('btn-bold').classList.toggle('editor-btn-aktif', document.queryCommandState('bold'));
+      document.getElementById('btn-italic').classList.toggle('editor-btn-aktif', document.queryCommandState('italic'));
+      document.getElementById('btn-underline').classList.toggle('editor-btn-aktif', document.queryCommandState('underline'));
+    }
+
+    // Font uygula
+    fontSelect.addEventListener('change', () => {
+      const font = fontSelect.value;
       if (!font) return;
       editor.focus();
-      const sel = window.getSelection();
-      if (!sel.rangeCount || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      const span = document.createElement('span');
-      span.style.fontFamily = font;
-      try { range.surroundContents(span); } catch(e) {
-        span.appendChild(range.extractContents());
-        range.insertNode(span);
-      }
-      editorHidden.value = editor.innerHTML;
-      document.getElementById('editor-font').value = '';
-    };
+      document.execCommand('fontName', false, font);
+      editorGuncelle();
+    });
 
-    // Punto uygula — seçili metne span ekle
-    window.editorPuntoUygula = (size) => {
-      if (!size) return;
+    // Punto uygula
+    puntoSelect.addEventListener('change', () => {
+      const pt = puntoSelect.value;
+      if (!pt) return;
       editor.focus();
+      // execCommand fontSize sadece 1-7 destekler, span ile yapalım
       const sel = window.getSelection();
-      if (!sel.rangeCount || sel.isCollapsed) return;
-      const range = sel.getRangeAt(0);
-      const span = document.createElement('span');
-      span.style.fontSize = size;
-      try { range.surroundContents(span); } catch(e) {
-        span.appendChild(range.extractContents());
-        range.insertNode(span);
+      if (sel.rangeCount && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        const span = document.createElement('span');
+        span.style.fontSize = pt + 'pt';
+        try {
+          range.surroundContents(span);
+        } catch(e) {
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+        }
+        editorGuncelle();
       }
-      editorHidden.value = editor.innerHTML;
-      document.getElementById('editor-punto').value = '';
+    });
+
+    window.editorToggle = (komut) => {
+      editor.focus();
+      document.execCommand(komut, false, null);
+      editorDurumGuncelle();
+      editorGuncelle();
     };
 
     window.editorFotoEkle = () => {
@@ -453,13 +493,13 @@
       if (!sayi) return;
       editor.focus();
       document.execCommand('insertText', false, `[foto:${sayi}]`);
-      editorHidden.value = editor.innerHTML;
+      editorGuncelle();
     };
 
     window.editorTemizle = () => {
       editor.focus();
       document.execCommand('removeFormat', false, null);
-      editorHidden.value = editor.innerHTML;
+      editorGuncelle();
     };
 
     function editorDoldur(html) {
@@ -470,6 +510,8 @@
     function editorSifirla() {
       editor.innerHTML = '';
       editorHidden.value = '';
+      fontSelect.selectedIndex = 0;
+      puntoSelect.selectedIndex = 0;
     }
     const CLOUD_NAME = 'qfrnbu9y';
     const UPLOAD_PRESET = 'z01gkjtv';
