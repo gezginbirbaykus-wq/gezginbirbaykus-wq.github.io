@@ -178,19 +178,19 @@
             <div class="form-group">
               <label>Tanıtım Yazısı *</label>
               <div class="editor-toolbar">
-                <select class="editor-btn" onchange="editorKomut('fontName', this.value); this.value=''">
+                <select class="editor-select" id="editor-font" onchange="editorFontUygula(this.value)">
                   <option value="">Font</option>
                   <option value="Inter">Inter</option>
                   <option value="Sanchez">Sanchez</option>
                 </select>
-                <select class="editor-btn" onchange="editorKomut('fontSize', this.value); this.value=''">
+                <select class="editor-select" id="editor-punto" onchange="editorPuntoUygula(this.value)">
                   <option value="">Punto</option>
-                  <option value="1">Küçük (10)</option>
-                  <option value="2">Normal (13)</option>
-                  <option value="3">Orta (16)</option>
-                  <option value="4">Büyük (18)</option>
-                  <option value="5">Daha Büyük (24)</option>
-                  <option value="6">Başlık (32)</option>
+                  <option value="0.8rem">Küçük</option>
+                  <option value="1rem">Normal</option>
+                  <option value="1.15rem">Orta</option>
+                  <option value="1.35rem">Büyük</option>
+                  <option value="1.6rem">Daha Büyük</option>
+                  <option value="2rem">Başlık</option>
                 </select>
                 <div class="editor-sep"></div>
                 <button type="button" class="editor-btn" onclick="editorKomut('bold')" title="Kalın"><b>B</b></button>
@@ -201,9 +201,7 @@
                 <button type="button" class="editor-btn" onclick="editorKomut('justifyCenter')" title="Ortala">↔</button>
                 <button type="button" class="editor-btn" onclick="editorKomut('justifyRight')" title="Sağa">➡</button>
                 <div class="editor-sep"></div>
-                <button type="button" class="editor-btn" onclick="editorKomut('insertUnorderedList')" title="Liste">• ≡</button>
                 <button type="button" class="editor-btn editor-foto-ekle" onclick="editorFotoEkle()" title="[foto:N] ekle">📷</button>
-                <div class="editor-sep"></div>
                 <button type="button" class="editor-btn editor-temizle" onclick="editorTemizle()" title="Formatı temizle">✕ Format</button>
               </div>
               <div id="ilce-aciklama-editor" class="editor-alan" contenteditable="true" data-placeholder="İlçeyi tanıtın..."></div>
@@ -405,18 +403,50 @@
     const editor = document.getElementById('ilce-aciklama-editor');
     const editorHidden = document.getElementById('ilce-aciklama');
 
-    // Editor içeriğini hidden textarea ile senkronize et
     editor.addEventListener('input', () => {
       editorHidden.value = editor.innerHTML;
     });
 
-    function editorKomut(komut, deger = null) {
+    function editorKomut(komut) {
       editor.focus();
-      document.execCommand(komut, false, deger);
+      document.execCommand(komut, false, null);
       editorHidden.value = editor.innerHTML;
     }
-
     window.editorKomut = editorKomut;
+
+    // Font uygula — seçili metne span ekle
+    window.editorFontUygula = (font) => {
+      if (!font) return;
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const span = document.createElement('span');
+      span.style.fontFamily = font;
+      try { range.surroundContents(span); } catch(e) {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+      }
+      editorHidden.value = editor.innerHTML;
+      document.getElementById('editor-font').value = '';
+    };
+
+    // Punto uygula — seçili metne span ekle
+    window.editorPuntoUygula = (size) => {
+      if (!size) return;
+      editor.focus();
+      const sel = window.getSelection();
+      if (!sel.rangeCount || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const span = document.createElement('span');
+      span.style.fontSize = size;
+      try { range.surroundContents(span); } catch(e) {
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+      }
+      editorHidden.value = editor.innerHTML;
+      document.getElementById('editor-punto').value = '';
+    };
 
     window.editorFotoEkle = () => {
       const sayi = prompt('Kaçıncı içerik fotoğrafını eklemek istiyorsun?', '1');
