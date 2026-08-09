@@ -34,8 +34,18 @@
 
   <!-- HERO -->
   <section class="page-hero" id="ulke-hero" style="display:none;">
-    <h1 id="ulke-ad"></h1>
-    <p class="subtitle" id="ulke-aciklama"></p>
+    <div class="ilce-kapak" id="ulke-kapak-hero" style="display:none;">
+      <img id="ulke-kapak-foto" src="" alt="" />
+      <div class="ilce-kapak-overlay"></div>
+      <div class="ilce-kapak-icerik">
+        <h1 id="ulke-ad"></h1>
+        <p class="subtitle" id="ulke-aciklama"></p>
+      </div>
+    </div>
+    <div id="ulke-hero-no-foto" class="page-hero">
+      <h1 id="ulke-ad-yedek"></h1>
+      <p class="subtitle" id="ulke-aciklama-yedek"></p>
+    </div>
   </section>
 
   <!-- MAIN -->
@@ -86,8 +96,20 @@
       const ulke = ulkeDoc.data();
       document.title = `${ulke.ad} Gezilecek Yerler | Gezginbirbaykus`;
       document.getElementById('bc-ulke').textContent = ulke.ad;
-      document.getElementById('ulke-ad').textContent = ulke.ad;
-      document.getElementById('ulke-aciklama').textContent = ulke.aciklama || '';
+
+      // Kapak fotosu varsa tam ekran, yoksa normal hero
+      if (ulke.kapakFotograf) {
+        document.getElementById('ulke-kapak-foto').src = ulke.kapakFotograf;
+        document.getElementById('ulke-ad').textContent = ulke.ad;
+        document.getElementById('ulke-aciklama').textContent = ulke.aciklama || '';
+        document.getElementById('ulke-kapak-hero').style.display = '';
+        document.getElementById('ulke-hero-no-foto').style.display = 'none';
+      } else {
+        document.getElementById('ulke-ad-yedek').textContent = ulke.ad;
+        document.getElementById('ulke-aciklama-yedek').textContent = ulke.aciklama || '';
+        document.getElementById('ulke-kapak-hero').style.display = 'none';
+        document.getElementById('ulke-hero-no-foto').style.display = '';
+      }
       document.getElementById('ulke-hero').style.display = '';
       document.getElementById('iller-baslik').textContent = `${ulke.ad} — İller`;
 

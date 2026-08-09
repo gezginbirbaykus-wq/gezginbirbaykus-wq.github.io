@@ -35,9 +35,19 @@
   </div>
 
   <!-- HERO -->
-  <section class="page-hero" id="il-hero" style="display:none;">
-    <h1 id="il-ad"></h1>
-    <p class="subtitle" id="il-aciklama"></p>
+  <section id="il-hero" style="display:none;">
+    <div class="ilce-kapak" id="il-kapak-hero" style="display:none;">
+      <img id="il-kapak-foto" src="" alt="" />
+      <div class="ilce-kapak-overlay"></div>
+      <div class="ilce-kapak-icerik">
+        <h1 id="il-ad"></h1>
+        <p class="subtitle" id="il-aciklama"></p>
+      </div>
+    </div>
+    <div id="il-hero-no-foto" class="page-hero">
+      <h1 id="il-ad-yedek"></h1>
+      <p class="subtitle" id="il-aciklama-yedek"></p>
+    </div>
   </section>
 
   <!-- MAIN -->
@@ -88,8 +98,20 @@
       const il = ilDoc.data();
       document.title = `${il.ad} İlçeleri | Gezginbirbaykus`;
       document.getElementById('bc-il').textContent = il.ad;
-      document.getElementById('il-ad').textContent = il.ad;
-      document.getElementById('il-aciklama').textContent = il.plaka ? `Plaka: ${il.plaka}` : '';
+
+      // Kapak fotosu varsa tam ekran, yoksa normal hero
+      if (il.kapakFotograf) {
+        document.getElementById('il-kapak-foto').src = il.kapakFotograf;
+        document.getElementById('il-ad').textContent = il.ad;
+        document.getElementById('il-aciklama').textContent = il.plaka ? `Plaka: ${il.plaka}` : '';
+        document.getElementById('il-kapak-hero').style.display = '';
+        document.getElementById('il-hero-no-foto').style.display = 'none';
+      } else {
+        document.getElementById('il-ad-yedek').textContent = il.ad;
+        document.getElementById('il-aciklama-yedek').textContent = il.plaka ? `Plaka: ${il.plaka}` : '';
+        document.getElementById('il-kapak-hero').style.display = 'none';
+        document.getElementById('il-hero-no-foto').style.display = '';
+      }
       document.getElementById('il-hero').style.display = '';
       document.getElementById('ilceler-baslik').textContent = `${il.ad} — İlçeler`;
 
