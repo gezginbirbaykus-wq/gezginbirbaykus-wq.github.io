@@ -122,7 +122,13 @@
       const ilce = ilceDoc.data();
       const icerikFotolar = ilce.icerikFotolar || [];
 
-      document.title = `${ilce.ad} — Gezginbirbaykus`;
+      document.title = `${ilce.ad} Gezilecek Yerler — Gezginbirbaykus`;
+
+      // Meta description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.name = 'description'; document.head.appendChild(metaDesc); }
+      const aciklamaKisa = (ilce.aciklama || '').replace(/<[^>]*>/g, '').substring(0, 155);
+      metaDesc.content = aciklamaKisa || `${ilce.ad} gezilecek yerler, ilçe rehberi ve tanıtımı.`;
       document.getElementById('bc-ilce').textContent = ilce.ad;
 
       // Kapak fotosu varsa tam ekran hero, yoksa normal hero
@@ -183,6 +189,9 @@
           document.getElementById('ilce-il-adi').textContent = il.ad;
           document.getElementById('ilce-il-adi-yedek').textContent = il.ad;
 
+          // Title'ı il bilgisiyle zenginleştir
+          document.title = `${ilce.ad} Gezilecek Yerler | ${il.ad} | Gezginbirbaykus`;
+
           // Breadcrumb - Ülke
           if (il.ulkeId) {
             const ulkeDoc = await getDoc(doc(db, 'ulkeler', il.ulkeId));
@@ -190,6 +199,19 @@
               const ulkeLink = document.getElementById('bc-ulke-link');
               ulkeLink.textContent = ulkeDoc.data().ad;
               ulkeLink.href = `./ulke.html?id=${il.ulkeId}`;
+
+              // Title'ı ülke bilgisiyle de güncelle
+              document.title = `${ilce.ad} Gezilecek Yerler | ${il.ad}, ${ulkeDoc.data().ad} | Gezginbirbaykus`;
+
+              // OG meta etiketleri
+              let ogTitle = document.querySelector('meta[property="og:title"]');
+              if (!ogTitle) { ogTitle = document.createElement('meta'); ogTitle.setAttribute('property','og:title'); document.head.appendChild(ogTitle); }
+              ogTitle.content = `${ilce.ad} Gezilecek Yerler | ${il.ad}`;
+
+              let ogDesc = document.querySelector('meta[property="og:description"]');
+              if (!ogDesc) { ogDesc = document.createElement('meta'); ogDesc.setAttribute('property','og:description'); document.head.appendChild(ogDesc); }
+              const aciklamaKisa = (ilce.aciklama || '').replace(/<[^>]*>/g, '').substring(0, 155);
+              ogDesc.content = aciklamaKisa || `${ilce.ad} gezilecek yerler, ilçe rehberi.`;
             }
           }
         }

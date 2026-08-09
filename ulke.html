@@ -84,12 +84,16 @@
       if (!ulkeDoc.exists()) { window.location = './index.html'; return; }
 
       const ulke = ulkeDoc.data();
-      document.title = `${ulke.ad} — Gezginbirbaykus`;
+      document.title = `${ulke.ad} Gezilecek Yerler | Gezginbirbaykus`;
       document.getElementById('bc-ulke').textContent = ulke.ad;
       document.getElementById('ulke-ad').textContent = ulke.ad;
       document.getElementById('ulke-aciklama').textContent = ulke.aciklama || '';
       document.getElementById('ulke-hero').style.display = '';
       document.getElementById('iller-baslik').textContent = `${ulke.ad} — İller`;
+
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) { metaDesc = document.createElement('meta'); metaDesc.name = 'description'; document.head.appendChild(metaDesc); }
+      metaDesc.content = `${ulke.ad} illeri ve ilçeleri gezilecek yerler rehberi. Gezginbirbaykus ile keşfet.`;
 
       // İller
       const liste = document.getElementById('il-listesi');
