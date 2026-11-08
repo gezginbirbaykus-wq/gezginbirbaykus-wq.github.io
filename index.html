@@ -52,9 +52,11 @@
 
       <!-- İstatistikler -->
       <div class="harita-stats-grid">
-        <div class="harita-stat"><div class="hs-renk gezildi"></div><div><div class="hs-sayi" id="sayi-gezildi">—</div><div class="hs-etiket">Gezildi</div></div></div>
-        <div class="harita-stat"><div class="hs-renk kismen"></div><div><div class="hs-sayi" id="sayi-kismen">—</div><div class="hs-etiket">Kısmen</div></div></div>
-        <div class="harita-stat"><div class="hs-renk gecildi"></div><div><div class="hs-sayi" id="sayi-gecildi">—</div><div class="hs-etiket">Yoldan Geçildi</div></div></div>
+        <div class="harita-stat"><div class="hs-renk" style="background:#1a7a3a;"></div><div><div class="hs-sayi" id="sayi-p5">—</div><div class="hs-etiket">Her Yer (5)</div></div></div>
+        <div class="harita-stat"><div class="hs-renk" style="background:#4CAF50;"></div><div><div class="hs-sayi" id="sayi-p4">—</div><div class="hs-etiket">Çok Gezdim (4)</div></div></div>
+        <div class="harita-stat"><div class="hs-renk" style="background:#8BC34A;"></div><div><div class="hs-sayi" id="sayi-p3">—</div><div class="hs-etiket">Orta (3)</div></div></div>
+        <div class="harita-stat"><div class="hs-renk" style="background:#FFC107;"></div><div><div class="hs-sayi" id="sayi-p2">—</div><div class="hs-etiket">Az (2)</div></div></div>
+        <div class="harita-stat"><div class="hs-renk" style="background:#FF7043;"></div><div><div class="hs-sayi" id="sayi-p1">—</div><div class="hs-etiket">Yoldan (1)</div></div></div>
         <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi" id="sayi-toplam">—</div><div class="hs-etiket">Toplam İlçe</div></div></div>
       </div>
 
@@ -64,9 +66,11 @@
           <span id="progress-metin" class="hp-alt"></span>
         </div>
         <div class="hp-bar-bg">
-          <div class="hp-bar gezildi" id="bar-gezildi" style="width:0%"></div>
-          <div class="hp-bar kismen"  id="bar-kismen"  style="width:0%"></div>
-          <div class="hp-bar gecildi" id="bar-gecildi" style="width:0%"></div>
+          <div class="hp-bar" id="bar-p5" style="width:0%;background:#1a7a3a;"></div>
+          <div class="hp-bar" id="bar-p4" style="width:0%;background:#4CAF50;"></div>
+          <div class="hp-bar" id="bar-p3" style="width:0%;background:#8BC34A;"></div>
+          <div class="hp-bar" id="bar-p2" style="width:0%;background:#FFC107;"></div>
+          <div class="hp-bar" id="bar-p1" style="width:0%;background:#FF7043;"></div>
         </div>
       </div>
 
@@ -365,25 +369,37 @@
           }
         });
 
-        // İstatistikler
-        let g=0, k=0, gc=0;
-        Object.values(byNorm).forEach(i => {
-          const p = i.puan ?? 0;
-          if      (p >= 4) g++;
-          else if (p >= 2) k++;
-          else if (p >= 1) gc++;
+        // İstatistikler — puan bazlı
+        const sayilar = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0};
+        // haritaEslesme'den puan topla (Firestore ilçesi olmayan eşleşmeler dahil)
+        Object.values(eslesmeTopoKendi).forEach(p => { if (p > 0) sayilar[p] = (sayilar[p]||0) + 1; });
+        // Firestore ilçelerinden puan topla (eşleşmesi olan)
+        Object.values(eslesme).forEach(ilceId => {
+          const veri = byId[ilceId];
+          if (veri && veri.puan > 0) { /* zaten eslesmeTopoKendi'de */ }
         });
-        document.getElementById('sayi-gezildi').textContent = g;
-        document.getElementById('sayi-kismen').textContent  = k;
-        document.getElementById('sayi-gecildi').textContent = gc;
-        document.getElementById('sayi-toplam').textContent  = ilceGeo.features.length;
-        const TOPLAM = 973;
-        const oran = ((g + k*0.5 + gc*0.25) / TOPLAM * 100);
-        document.getElementById('progress-yuzde').textContent = oran.toFixed(1)+'%';
-        document.getElementById('progress-metin').textContent = `${g} tam · ${k} kısmi · ${gc} geçiş`;
-        document.getElementById('bar-gezildi').style.width = (g /TOPLAM*100).toFixed(2)+'%';
-        document.getElementById('bar-kismen').style.width  = (k /TOPLAM*100).toFixed(2)+'%';
-        document.getElementById('bar-gecildi').style.width = (gc/TOPLAM*100).toFixed(2)+'%';
+
+        document.getElementById('sayi-p5').textContent = sayilar[5];
+        document.getElementById('sayi-p4').textContent = sayilar[4];
+        document.getElementById('sayi-p3').textContent = sayilar[3];
+        document.getElementById('sayi-p2').textContent = sayilar[2];
+        document.getElementById('sayi-p1').textContent = sayilar[1];
+        document.getElementById('sayi-toplam').textContent = 973;
+
+        // Ağırlıklı ilerleme: her puan kendi ağırlığıyla katkı sağlar (max 5*973)
+        const toplamPuan = Object.entries(sayilar).reduce((acc, [p, s]) => acc + parseInt(p) * s, 0);
+        const maxPuan    = 5 * 973;
+        const oran       = (toplamPuan / maxPuan * 100);
+        document.getElementById('progress-yuzde').textContent = oran.toFixed(1) + '%';
+        document.getElementById('progress-metin').textContent =
+          `${sayilar[5]} her yer · ${sayilar[4]} çok · ${sayilar[3]} orta · ${sayilar[2]} az · ${sayilar[1]} yoldan`;
+
+        const T = 973;
+        document.getElementById('bar-p5').style.width = (sayilar[5]/T*100).toFixed(2)+'%';
+        document.getElementById('bar-p4').style.width = (sayilar[4]/T*100).toFixed(2)+'%';
+        document.getElementById('bar-p3').style.width = (sayilar[3]/T*100).toFixed(2)+'%';
+        document.getElementById('bar-p2').style.width = (sayilar[2]/T*100).toFixed(2)+'%';
+        document.getElementById('bar-p1').style.width = (sayilar[1]/T*100).toFixed(2)+'%';
 
         const RENK = {
           5: '#1a7a3a',
