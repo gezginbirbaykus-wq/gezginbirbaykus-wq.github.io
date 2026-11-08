@@ -1417,10 +1417,11 @@
 
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
 
-        // SVG parse
-        const tmp = document.createElement('div');
-        tmp.innerHTML = await svgResp.text();
-        const svg = tmp.querySelector('svg');
+        // SVG parse — DOMParser kullan
+        const svgText2 = await svgResp.text();
+        const parser2  = new DOMParser();
+        const svgDoc2  = parser2.parseFromString(svgText2, 'image/svg+xml');
+        const svg      = document.adoptNode(svgDoc2.documentElement);
         svg.querySelectorAll('style').forEach(s => s.remove());
 
         const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);

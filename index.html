@@ -376,10 +376,11 @@
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
         const IL_KALIN = 1.4, ILCE_INCE = 0.4;
 
-        // SVG parse
-        const tmp = document.createElement('div');
-        tmp.innerHTML = await svgResp.text();
-        const svg = tmp.querySelector('svg');
+        // SVG parse — DOMParser kullan (<?xml?> tagını doğru işler)
+        const svgText = await svgResp.text();
+        const parser  = new DOMParser();
+        const svgDoc  = parser.parseFromString(svgText, 'image/svg+xml');
+        const svg     = document.adoptNode(svgDoc.documentElement);
         svg.querySelectorAll('style').forEach(s => s.remove());
 
         const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);
