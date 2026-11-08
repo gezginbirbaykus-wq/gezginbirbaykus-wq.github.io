@@ -1562,6 +1562,8 @@
           }),
           interactive: false,
         }).addTo(harita);
+        ilSinirKatman.bringToFront();
+        harita.on('zoomend moveend', () => ilSinirKatman.bringToFront());
         harita.invalidateSize();
         setTimeout(() => {
           harita.invalidateSize();

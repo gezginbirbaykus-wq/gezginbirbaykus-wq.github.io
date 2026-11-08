@@ -473,6 +473,7 @@
           interactive: false,
         }).addTo(harita);
         ilSinirKatman.bringToFront();
+        harita.on('zoomend moveend', () => ilSinirKatman.bringToFront());
 
       } catch(err) {
         console.error(err);
