@@ -390,7 +390,7 @@
           <div id="admin-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:520px;gap:12px;color:var(--brown-60);">
             <div class="spinner"></div><p>Harita yükleniyor...</p>
           </div>
-          <div id="admin-harita" style="display:none;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:#FDFAF6;"></div>
+          <div id="admin-harita" style="visibility:hidden;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:#FDFAF6;"></div>
 
           <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;">
             <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
@@ -1390,8 +1390,7 @@
       btn.addEventListener('click', () => {
         if (btn.dataset.tab === 'harita' && !adminHaritaYuklendi) {
           adminHaritaYuklendi = true;
-          // Panel görünür olduktan sonra haritayı başlat
-          requestAnimationFrame(() => requestAnimationFrame(() => adminHaritaYukle()));
+          setTimeout(() => adminHaritaYukle(), 50);
         }
       });
     });
@@ -1445,12 +1444,9 @@
 
         document.getElementById('admin-harita-yukle').style.display = 'none';
         const haritaEl = document.getElementById('admin-harita');
-        haritaEl.style.display = '';
+        haritaEl.style.visibility = 'visible';
         haritaEl.style.borderRadius = '14px';
         haritaEl.style.overflow = 'hidden';
-
-        // Container görünür olduktan sonra haritayı oluştur
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         const harita = L.map('admin-harita', {
           zoomControl: true,
@@ -1541,8 +1537,8 @@
         harita.invalidateSize();
         setTimeout(() => {
           harita.invalidateSize();
-          harita.fitBounds(ilceKatman.getBounds(), { padding: [30, 50] });
-        }, 300);
+          harita.setView([39.0, 35.0], 5.5);
+        }, 400);
 
         // ===== KAYDET =====
         document.getElementById('harita-kaydet-btn').onclick = async () => {
