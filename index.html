@@ -383,8 +383,9 @@
         const svg     = document.adoptNode(svgDoc.documentElement);
         svg.querySelectorAll('style').forEach(s => s.remove());
 
-        const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);
-        const origVB = { x:vbP[0], y:vbP[1], w:vbP[2], h:vbP[3] };
+        const vbStr  = svg.getAttribute('viewBox') || svg.getAttribute('viewbox') || '0 0 800 264';
+        const vbP    = vbStr.trim().split(/[\s,]+/).map(Number);
+        const origVB = { x:vbP[0]||0, y:vbP[1]||0, w:vbP[2]||800, h:vbP[3]||264 };
         let vb = { ...origVB };
         const tooltip = document.getElementById('h-tooltip');
         let panning = false;

@@ -1424,8 +1424,9 @@
         const svg      = document.adoptNode(svgDoc2.documentElement);
         svg.querySelectorAll('style').forEach(s => s.remove());
 
-        const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);
-        const origVB = { x:vbP[0], y:vbP[1], w:vbP[2], h:vbP[3] };
+        const vbStr2  = svg.getAttribute('viewBox') || svg.getAttribute('viewbox') || '0 0 800 264';
+        const vbP2    = vbStr2.trim().split(/[\s,]+/).map(Number);
+        const origVB = { x:vbP2[0]||0, y:vbP2[1]||0, w:vbP2[2]||800, h:vbP2[3]||264 };
         let vb = { ...origVB };
         let seciliIlceId = null;
         let seciliSvgId  = null;
