@@ -1462,7 +1462,18 @@
             return `<option value="${i.id}">${i.ad}${ilAd ? ' — ' + ilAd : ''}</option>`;
           }).join('');
 
-        document.getElementById('admin-harita-yukle').style.display = 'none';
+        // isim -> puan reverse map (aynı isimli tüm feature'lar için)
+        const adPuanMap = {}; // normalize(topoAd) -> puan
+        Object.entries(eslesmeTopoAd).forEach(([idx, ad]) => {
+          const norm = aN(ad);
+          const puan = eslesmeTopoKendi[idx] ?? 0;
+          if (puan > 0) adPuanMap[norm] = puan;
+        });
+        // Firestore ilçelerinden de ekle
+        Object.entries(eslesmeMap).forEach(([idx, ilceId]) => {
+          const veri = ilcelerHById[ilceId];
+          if (veri && veri.puan > 0) adPuanMap[aN(veri.ad)] = veri.puan;
+        });
         const haritaEl = document.getElementById('admin-harita');
         haritaEl.style.visibility = 'visible';
         haritaEl.style.borderRadius = '14px';
@@ -1505,7 +1516,11 @@
             const idx    = String(ilceGeo.features.indexOf(feature));
             const ilceId = eslesmeMap[idx];
             const veri   = ilceId ? ilcelerHById[ilceId] : null;
-            const puan   = veri ? veri.puan : (eslesmeTopoKendi[idx] ?? 0);
+            // 1) Firestore ilçesi, 2) index bazlı kayıt, 3) aynı isimli başka kayıt
+            const topoAd = eslesmeTopoAd[idx] || '';
+            const puan   = veri ? veri.puan
+                         : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
+                         : (topoAd ? (adPuanMap[aN(topoAd)] ?? 0) : 0));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
