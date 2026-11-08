@@ -1538,7 +1538,8 @@
           interactive: false,
         }).addTo(harita);
 
-        harita.setView([39.0, 35.0], 5.5);
+        harita.invalidateSize();
+        harita.fitBounds(ilceKatman.getBounds(), { padding: [30, 50] });
 
         // ===== KAYDET =====
         document.getElementById('harita-kaydet-btn').onclick = async () => {
