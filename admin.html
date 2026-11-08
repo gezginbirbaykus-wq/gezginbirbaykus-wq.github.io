@@ -1551,18 +1551,17 @@
           }
         }).addTo(harita);
 
-        // İl sınırları
-        L.geoJSON(ilGeo, {
+        // İl sınırları — ilçe katmanının üstüne ekle
+        const ilSinirKatman = L.geoJSON(ilGeo, {
           style: () => ({
             fillColor: 'transparent',
             fillOpacity: 0,
             color: '#6b4423',
-            weight: 1.5,
-            opacity: 0.9,
+            weight: 2,
+            opacity: 1,
           }),
           interactive: false,
         }).addTo(harita);
-
         harita.invalidateSize();
         setTimeout(() => {
           harita.invalidateSize();
