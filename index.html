@@ -348,9 +348,15 @@
 
         // haritaEslesme: featureIndex -> ilceId
         const eslesme = {}; // featureIndex (string) -> ilceId
+        const eslesmeTopoAd = {}; // featureIndex (string) -> topoAd
+        const eslesmeTopoIl = {}; // featureIndex (string) -> topoIl
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.svgId && data.ilceId) eslesme[data.svgId] = data.ilceId;
+          if (data.svgId) {
+            if (data.ilceId) eslesme[data.svgId] = data.ilceId;
+            if (data.topoAd) eslesmeTopoAd[data.svgId] = data.topoAd;
+            if (data.topoIl) eslesmeTopoIl[data.svgId] = data.topoIl;
+          }
         });
 
         // İstatistikler
@@ -383,7 +389,9 @@
           zoomControl: true,
           scrollWheelZoom: false,
           attributionControl: false,
-          zoomSnap: 0.5,
+          zoomSnap: 0.25,
+          center: [39.0, 35.0],
+          zoom: 5.5,
         });
 
         const tooltip = document.getElementById('h-tooltip');
@@ -408,8 +416,8 @@
             const ilceId = eslesme[idx];
             const veri   = ilceId ? byId[ilceId] : null;
             const durum  = veri ? veri.durum : 'gezilmedi';
-            const ad     = veri ? veri.ad : '';
-            const il     = veri ? veri.il : '';
+            const ad     = veri ? veri.ad : (eslesmeTopoAd[idx] || '');
+            const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
 
             layer.on({
               mouseover(e) {
@@ -446,8 +454,6 @@
           }),
           interactive: false,
         }).addTo(harita);
-
-        harita.fitBounds(ilceKatman.getBounds(), { padding: [8, 8] });
 
       } catch(err) {
         console.error(err);

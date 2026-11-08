@@ -359,14 +359,19 @@
 
           <!-- Seçilen ilçe bilgisi -->
           <div id="harita-secim-panel" style="display:none;background:var(--bg);border:1.5px solid var(--brown-40);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);margin-bottom:3px;">Haritada Seçilen</div>
-                <div id="harita-secim-topo-ad" style="font-family:'Sanchez',serif;font-style:italic;color:var(--brown);font-size:1.05rem;"></div>
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+
+              <!-- İlçe + İl adı inputları -->
+              <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:200px;">
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);">Haritada Seçilen</div>
+                <input id="harita-topo-ad-input" type="text" placeholder="İlçe adı  (Derecik)" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:'Sanchez',serif;font-style:italic;color:var(--brown);background:var(--bg-card);box-sizing:border-box;" />
+                <input id="harita-topo-il-input" type="text" placeholder="İl adı  (Hakkari)" style="width:100%;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-muted);background:var(--bg-card);box-sizing:border-box;" />
               </div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+
+              <!-- Eşleştirme + durum + butonlar -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:22px;">
                 <select id="harita-eslesme-select" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;background:var(--bg-card);color:var(--text-main);min-width:180px;">
-                  <option value="">— Firestore İlçesi Seç —</option>
+                  <option value="">— Blog ilçesi seç (opsiyonel) —</option>
                 </select>
                 <select id="harita-durum-select" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;background:var(--bg-card);color:var(--text-main);">
                   <option value="gezilmedi">⬜ Gezilmedi</option>
@@ -1385,7 +1390,8 @@
       btn.addEventListener('click', () => {
         if (btn.dataset.tab === 'harita' && !adminHaritaYuklendi) {
           adminHaritaYuklendi = true;
-          setTimeout(adminHaritaYukle, 100);
+          // Panel görünür olduktan sonra haritayı başlat
+          requestAnimationFrame(() => requestAnimationFrame(() => adminHaritaYukle()));
         }
       });
     });
@@ -1411,11 +1417,17 @@
           ilcelerHById[d.id] = obj;
         });
 
-        // featureIndex -> ilceId
+        // featureIndex -> { ilceId, topoAd, topoIl }
         const eslesmeMap = {};
+        const eslesmeTopoAd = {};
+        const eslesmeTopoIl = {};
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.svgId && data.ilceId) eslesmeMap[data.svgId] = data.ilceId;
+          if (data.svgId) {
+            if (data.ilceId) eslesmeMap[data.svgId] = data.ilceId;
+            if (data.topoAd) eslesmeTopoAd[data.svgId] = data.topoAd;
+            if (data.topoIl) eslesmeTopoIl[data.svgId] = data.topoIl;
+          }
         });
 
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#f5f0eb' };
@@ -1437,11 +1449,16 @@
         haritaEl.style.borderRadius = '14px';
         haritaEl.style.overflow = 'hidden';
 
+        // Container görünür olduktan sonra haritayı oluştur
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
         const harita = L.map('admin-harita', {
           zoomControl: true,
           scrollWheelZoom: true,
           attributionControl: false,
-          zoomSnap: 0.5,
+          zoomSnap: 0.25,
+          center: [39.0, 35.0],
+          zoom: 5.5,
         });
 
         let seciliLayer = null;
@@ -1470,15 +1487,19 @@
             const ilceId = eslesmeMap[idx];
             const veri   = ilceId ? ilcelerHById[ilceId] : null;
             const durum  = veri ? veri.durum : 'gezilmedi';
-            const ad     = veri ? veri.ad : '(eşleştirilmedi)';
-            const il     = veri ? veri.il : '';
+            const ad     = veri ? veri.ad : (eslesmeTopoAd[idx] || '');
+            const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
 
             layer.on({
               mouseover(e) {
                 if (layer !== seciliLayer) e.target.setStyle({ weight:1.5, fillOpacity:0.95, color:'#9B6240' });
                 e.target.bringToFront();
-                adminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${ad}${il?`<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>`:''}`;
-                adminTooltip.style.display='block';
+                if (ad) {
+                  adminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${ad}${il?`<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>`:''}`;
+                  adminTooltip.style.display='block';
+                } else {
+                  adminTooltip.style.display='none';
+                }
               },
               mouseout(e) {
                 if (layer !== seciliLayer) ilceKatman.resetStyle(e.target);
@@ -1489,14 +1510,13 @@
                 adminTooltip.style.top=(e.originalEvent.clientY-10)+'px';
               },
               click() {
-                // Önceki seçimi sıfırla
                 if (seciliLayer) ilceKatman.resetStyle(seciliLayer);
                 seciliLayer = layer;
                 seciliIdx   = idx;
                 layer.setStyle({ weight:2.5, color:'#9B6240', fillOpacity:0.95 });
 
-                // Paneli göster
-                document.getElementById('harita-secim-topo-ad').textContent = ad;
+                document.getElementById('harita-topo-ad-input').value = ad;
+                document.getElementById('harita-topo-il-input').value = il;
                 document.getElementById('harita-secim-panel').style.display = '';
                 document.getElementById('harita-kaydet-alert').innerHTML = '';
                 document.getElementById('harita-eslesme-select').value = ilceId || '';
@@ -1518,41 +1538,54 @@
           interactive: false,
         }).addTo(harita);
 
-        harita.fitBounds(ilceKatman.getBounds(), { padding: [8, 8] });
+        harita.setView([39.0, 35.0], 5.5);
 
         // ===== KAYDET =====
         document.getElementById('harita-kaydet-btn').onclick = async () => {
           const ilceId  = document.getElementById('harita-eslesme-select').value;
           const durum   = document.getElementById('harita-durum-select').value;
+          const topoAd  = document.getElementById('harita-topo-ad-input').value.trim();
+          const topoIl  = document.getElementById('harita-topo-il-input').value.trim();
           const alertEl = document.getElementById('harita-kaydet-alert');
-          if (!ilceId) { alertEl.innerHTML='<div class="alert alert-error">Lütfen bir ilçe seç.</div>'; return; }
+
+          if (!topoAd) { alertEl.innerHTML='<div class="alert alert-error">Lütfen ilçe adını yaz.</div>'; return; }
 
           const btn = document.getElementById('harita-kaydet-btn');
           btn.disabled=true; btn.textContent='Kaydediliyor...';
           try {
-            // 1) Firestore ilçesi güncelle
-            await updateDoc(doc(db,'ilceler',ilceId),{durum});
-
-            // 2) Eşleştirme kaydet (featureIndex -> ilceId)
-            const mevcutDoc = eslesmeSnap.docs.find(d=>d.data().svgId===seciliIdx);
-            if (mevcutDoc) {
-              await updateDoc(doc(db,'haritaEslesme',mevcutDoc.id),{svgId:seciliIdx,ilceId});
-            } else {
-              await addDoc(collection(db,'haritaEslesme'),{svgId:seciliIdx,ilceId});
+            // 1) Firestore ilçesi varsa güncelle
+            if (ilceId) {
+              await updateDoc(doc(db,'ilceler',ilceId),{durum});
             }
 
-            // 3) Haritada rengi anında güncelle
+            // 2) Eşleştirme kaydet (featureIndex -> ilceId + topoAd)
+            const kayitData = { svgId: seciliIdx, topoAd, topoIl };
+            if (ilceId) kayitData.ilceId = ilceId;
+
+            const mevcutDoc = eslesmeSnap.docs.find(d=>d.data().svgId===seciliIdx);
+            if (mevcutDoc) {
+              await updateDoc(doc(db,'haritaEslesme',mevcutDoc.id), kayitData);
+            } else {
+              await addDoc(collection(db,'haritaEslesme'), kayitData);
+            }
+
+            // 3) Local map güncelle
+            eslesmeTopoAd[seciliIdx] = topoAd;
+            eslesmeTopoIl[seciliIdx] = topoIl;
+            if (ilceId) {
+              eslesmeMap[seciliIdx] = ilceId;
+              if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
+            }
+
+            // 4) Haritada rengi anında güncelle
             if (seciliLayer) {
-              seciliLayer.setStyle({ fillColor:RENK[durum], fillOpacity:0.85, color:'#b8a898', weight:0.5 });
+              const yeniDurum = ilceId ? durum : 'gezilmedi';
+              seciliLayer.setStyle({ fillColor:RENK[yeniDurum], fillOpacity: yeniDurum==='gezilmedi'?0.6:0.85, color:'#b8a898', weight:0.5 });
               seciliLayer = null;
             }
 
-            // 4) Local map güncelle
-            eslesmeMap[seciliIdx] = ilceId;
-            if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
-
             alertEl.innerHTML='<div class="alert alert-success">✅ Kaydedildi!</div>';
-            document.getElementById('harita-secim-panel').style.display='none';
+            setTimeout(() => { document.getElementById('harita-secim-panel').style.display='none'; }, 1200);
           } catch(err) {
             alertEl.innerHTML=`<div class="alert alert-error">Hata: ${err.message}</div>`;
           } finally {
