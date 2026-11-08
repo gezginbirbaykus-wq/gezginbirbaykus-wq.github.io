@@ -1541,13 +1541,18 @@
         document.getElementById('admin-harita-yukle').style.display = 'none';
         wrap.style.display = '';
 
-        svg.style.width = '100%';
-        svg.style.height = 'auto';
-        svg.style.display = 'block';
-        svg.style.cursor = 'grab';
+        // SVG boyut — boşluk kalmasın
+        svg.setAttribute('width', '100%');
+        svg.removeAttribute('height');
+        svg.style.cssText = `width:100%;height:auto;display:block;cursor:grab;aspect-ratio:${origVB.w}/${origVB.h};`;
 
-        // Pan & Zoom
-        function applyVB() { svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+        // Pan & Zoom — kaydırma sınırıyla
+        function clamp() {
+          const pad = vb.w * 0.15;
+          vb.x = Math.max(origVB.x - pad, Math.min(origVB.x + origVB.w - vb.w + pad, vb.x));
+          vb.y = Math.max(origVB.y - pad, Math.min(origVB.y + origVB.h - vb.h + pad, vb.y));
+        }
+        function applyVB() { clamp(); svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
         function zoom(f,cx,cy) {
           cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
           const nw=Math.max(80,Math.min(origVB.w,vb.w*f));

@@ -442,6 +442,9 @@
 
         const wrap = document.getElementById('h-svg-wrap');
         wrap.appendChild(svg);
+        svg.setAttribute('width','100%');
+        svg.removeAttribute('height');
+        svg.style.cssText=`width:100%;height:auto;display:block;cursor:grab;aspect-ratio:${origVB.w}/${origVB.h};`;
         document.getElementById('h-yukle').style.display='none';
         wrap.style.display='';
 
