@@ -1420,7 +1420,7 @@
         // SVG parse
         const svgText2 = await svgResp.text();
         const tmp2 = document.createElement('div');
-        tmp2.innerHTML = svgText2.replace(/<\?xml[^?]*\?>/,'');
+        tmp2.innerHTML = svgText2;
         const svg = tmp2.querySelector('svg');
         if (!svg) throw new Error('SVG parse edilemedi');
         svg.querySelectorAll('style').forEach(s => s.remove());

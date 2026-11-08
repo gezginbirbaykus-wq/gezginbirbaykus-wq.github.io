@@ -378,9 +378,8 @@
 
         // SVG parse
         const svgText = await svgResp.text();
-        // <?xml?> ile başlayan dosyalar için text/html parse kullan
         const tmp = document.createElement('div');
-        tmp.innerHTML = svgText.replace(/<\?xml[^?]*\?>/,'');
+        tmp.innerHTML = svgText;
         const svg = tmp.querySelector('svg');
         if (!svg) throw new Error('SVG parse edilemedi');
         svg.querySelectorAll('style').forEach(s => s.remove());
