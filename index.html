@@ -89,8 +89,6 @@
     <p class="footer-copy">© 2026 — Tüm hakları saklıdır.</p>
   </footer>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
   <script type="module">
     import { db } from './js/firebase-config.js';
     import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -297,13 +295,14 @@
 
     yukle();
 
-    // ===== ANA SAYFA MİNİ HARİTA =====
+    // ===== ANA SAYFA MİNİ HARİTA (SVG) =====
     async function anasayfaHaritaYukle() {
       try {
-        const [ilceSnap, ilSnap, eslesmeSnap] = await Promise.all([
+        const [ilceSnap, ilSnap, eslesmeSnap, svgResp] = await Promise.all([
           getDocs(collection(db, 'ilceler')),
           getDocs(collection(db, 'iller')),
           getDocs(collection(db, 'haritaEslesme')),
+          fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
         const illerMapH = {};
@@ -312,91 +311,78 @@
         const ilcelerH = {}, ilcelerHById = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
-          const norm = hNorm(data.ad);
           const obj  = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMapH[data.ilId] || '' };
-          ilcelerH[norm] = obj;
+          ilcelerH[hNorm(data.ad)] = obj;
           ilcelerHById[d.id] = obj;
         });
 
         const eslesmeMap = {};
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.topoAd && data.ilceId) eslesmeMap[data.topoAd] = data.ilceId;
+          if (data.svgId  && data.ilceId) eslesmeMap[data.svgId]         = data.ilceId;
+          if (data.topoAd && data.ilceId) eslesmeMap[hNorm(data.topoAd)] = data.ilceId;
         });
 
-        const RENKLER_H = {
-          gezildi:   { dolgu: '#27ae60', op: 0.82, kenar: '#1e8449', kw: 0.7 },
-          kismen:    { dolgu: '#2980b9', op: 0.72, kenar: '#1f618d', kw: 0.7 },
-          gecildi:   { dolgu: '#f39c12', op: 0.72, kenar: '#d68910', kw: 0.7 },
-          gezilmedi: { dolgu: '#f5f0eb', op: 0.55, kenar: '#c4b5a8', kw: 0.4 },
-        };
+        const RENKLER_HEX = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#bdc3c7' };
 
-        const resp    = await fetch('./assets/turkey.topojson');
-        const topo    = await resp.json();
-        const geojson = topojson.feature(topo, topo.objects.admin_level_6);
-
+        // SVG'yi DOM'a ekle
+        const svgText = await svgResp.text();
+        const wrap = document.getElementById('anasayfa-harita');
+        wrap.innerHTML = svgText;
         document.getElementById('anasayfa-harita-yukle').style.display = 'none';
-        const haritaEl = document.getElementById('anasayfa-harita');
-        haritaEl.style.display = '';
+        wrap.style.display = '';
 
-        const harita = L.map('anasayfa-harita', {
-          zoomControl: true,
-          scrollWheelZoom: false,  // scroll ile zoom yok (sayfa kaydırmasını engeller)
-          doubleClickZoom: true,
-          dragging: true,
-          touchZoom: true,
-          attributionControl: false,
-          zoomSnap: 0.25,
-          zoomDelta: 0.5,
-        });
+        const svg = wrap.querySelector('svg');
 
-        haritaEl.style.background = '#FDFAF6';
-
-        function bul(topoAd) {
-          const norm = hNorm(topoAd);
-          if (eslesmeMap[norm] && ilcelerHById[eslesmeMap[norm]]) return ilcelerHById[eslesmeMap[norm]];
-          if (ilcelerH[norm]) return ilcelerH[norm];
-          return null;
+        // Tooltip elementi — index.html'de yoksa oluştur
+        let tooltip = document.getElementById('harita-tooltip');
+        if (!tooltip) {
+          tooltip = document.createElement('div');
+          tooltip.id = 'harita-tooltip';
+          tooltip.style.cssText = 'position:fixed;background:rgba(255,255,255,0.97);border:1px solid #DEB898;border-radius:10px;padding:7px 13px;font-family:Inter,sans-serif;font-size:0.82rem;font-weight:700;color:#2A1F16;box-shadow:0 4px 16px rgba(0,0,0,0.12);pointer-events:none;z-index:9999;display:none;white-space:nowrap;';
+          document.body.appendChild(tooltip);
         }
 
-        const katman = L.geoJSON(geojson, {
-          style: feature => {
-            const v = bul(feature.properties.name || '');
-            const d = v ? v.durum : 'gezilmedi';
-            const r = RENKLER_H[d];
-            return { fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: r.kw, opacity: 1 };
-          },
-          onEachFeature: (feature, layer) => {
-            const v      = bul(feature.properties.name || '');
-            const durum  = v ? v.durum : 'gezilmedi';
-            const ad     = v ? v.ad : feature.properties.name || '';
-            const il     = v ? v.il : '';
-            const renkHex = RENKLER_H[durum]?.dolgu || '#bdc3c7';
+        svg.querySelectorAll('g.ilce').forEach(ilceEl => {
+          const svgId   = ilceEl.id;
+          const titleEl = ilceEl.querySelector('title');
+          const titleAd = titleEl ? titleEl.textContent.trim() : '';
 
-            layer.bindTooltip(`
-              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${renkHex};margin-right:5px;vertical-align:middle;"></span>${ad}
-              ${il ? `<span style="display:block;font-size:0.7rem;color:#9B6240;margin-top:1px;">${il}</span>` : ''}
-            `, { sticky: true, className: 'ilce-tooltip', direction: 'top', offset: [0, -4] });
-
-            layer.on({
-              mouseover(e) { e.target.setStyle({ weight: 2, fillOpacity: 0.95, color: '#5C4A3A' }); e.target.bringToFront(); },
-              mouseout(e)  { katman.resetStyle(e.target); },
-              click() {
-                if (durum === 'gezildi' && v) window.location.href = `./ilce.html?id=${v.id}`;
-              }
-            });
-
-            // Gezildi ise cursor pointer
-            if (durum === 'gezildi') {
-              layer.getElement && layer.on('add', () => {
-                const el = layer.getElement();
-                if (el) el.style.cursor = 'pointer';
-              });
+          // Eşleştir
+          let veri = null;
+          if (eslesmeMap[svgId] && ilcelerHById[eslesmeMap[svgId]]) {
+            veri = ilcelerHById[eslesmeMap[svgId]];
+          } else {
+            veri = ilcelerH[hNorm(titleAd)];
+            if (!veri) {
+              const parca = svgId.split('-').slice(1).join('-');
+              veri = ilcelerH[hNorm(parca)];
             }
           }
-        }).addTo(harita);
 
-        harita.fitBounds(katman.getBounds(), { padding: [6, 6] });
+          const durum    = veri ? veri.durum : 'gezilmedi';
+          const gosterAd = veri ? veri.ad : titleAd;
+          const ilAd     = veri ? veri.il : '';
+
+          ilceEl.classList.add(durum);
+
+          // Hover tooltip
+          ilceEl.addEventListener('mouseenter', () => {
+            tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENKLER_HEX[durum]};margin-right:6px;vertical-align:middle;"></span>${gosterAd}<span style="display:block;font-size:0.72rem;color:#9B6240;font-weight:400;">${ilAd}</span>${durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;font-weight:500;">→ içeriğe git</span>':''}`;
+            tooltip.style.display = 'block';
+          });
+          ilceEl.addEventListener('mousemove', e => {
+            tooltip.style.left = (e.clientX + 14) + 'px';
+            tooltip.style.top  = (e.clientY - 10) + 'px';
+          });
+          ilceEl.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+          // Tıklama
+          if (durum === 'gezildi' && veri) {
+            ilceEl.style.cursor = 'pointer';
+            ilceEl.addEventListener('click', () => { window.location.href = `./ilce.html?id=${veri.id}`; });
+          }
+        });
 
       } catch (err) {
         console.error('Mini harita:', err);
@@ -408,8 +394,8 @@
     function hNorm(ad) {
       return (ad || '').toLowerCase()
         .replace(/\s*\(.*?\)\s*/g, '')
-        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ş/g, 's')
-        .replace(/ç/g, 'c').replace(/ö/g, 'o').replace(/ü/g, 'u')
+        .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s')
+        .replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u')
         .trim();
     }
 

@@ -1547,10 +1547,37 @@ img { max-width: 100%; display: block; }
   border-color: var(--brown-40);
 }
 
-/* Leaflet harita cursor */
-.leaflet-interactive.gezildi-cursor {
-  cursor: pointer !important;
+.svg-harita-mini-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
 }
+
+.svg-harita-mini-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.svg-harita-mini-wrap svg .ilce > path {
+  fill: #f0ece6;
+  stroke: #c4b5a8;
+  stroke-width: 0.3;
+  transition: fill 0.15s, opacity 0.15s;
+}
+
+.svg-harita-mini-wrap svg .sehir {
+  stroke: #9B6240;
+  stroke-width: 0.8;
+}
+
+.svg-harita-mini-wrap svg .ilce.gezildi > path   { fill: #27ae60; stroke: #1e8449; stroke-width: 0.4; cursor: pointer; }
+.svg-harita-mini-wrap svg .ilce.kismen > path    { fill: #2980b9; stroke: #1f618d; stroke-width: 0.4; }
+.svg-harita-mini-wrap svg .ilce.gecildi > path   { fill: #f39c12; stroke: #d68910; stroke-width: 0.4; }
+.svg-harita-mini-wrap svg .ilce.gezilmedi > path { fill: #f0ece6; stroke: #c4b5a8; stroke-width: 0.3; }
+.svg-harita-mini-wrap svg .ilce:hover > path     { opacity: 0.75; }
 
 /* Tooltip stili (index'te de kullanılıyor) */
 .ilce-tooltip {
