@@ -1462,3 +1462,50 @@ img { max-width: 100%; display: block; }
   color: var(--text-faint);
   pointer-events: none;
 }
+
+/* ===== DURUM SEÇİCİ (Admin - İlçe) ===== */
+.durum-sec-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.durum-sec-btn {
+  cursor: pointer;
+}
+
+.durum-sec-btn input[type="radio"] {
+  display: none;
+}
+
+.durum-sec-ic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 2px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--bg);
+  color: var(--text-muted);
+  transition: all 0.2s;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.durum-sec-ic:hover {
+  border-color: var(--brown-40);
+  color: var(--text-main);
+}
+
+.durum-sec-btn input[type="radio"]:checked + .durum-sec-ic {
+  border-color: currentColor;
+  font-weight: 700;
+}
+
+.durum-sec-btn input[type="radio"]:checked + .durum-gezildi  { background: #d4f0e4; color: #1a7a45; border-color: #27ae60; }
+.durum-sec-btn input[type="radio"]:checked + .durum-kismen   { background: #d0e8f8; color: #1a5c8a; border-color: #2980b9; }
+.durum-sec-btn input[type="radio"]:checked + .durum-gecildi  { background: #fef3d0; color: #8a5a00; border-color: #f39c12; }
+.durum-sec-btn input[type="radio"]:checked + .durum-gezilmedi{ background: var(--border-light); color: var(--text-muted); border-color: var(--border); }

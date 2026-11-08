@@ -6,6 +6,7 @@
   <title>Admin — Gezginbirbaykus</title>
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -56,6 +57,7 @@
           <button class="admin-tab active" data-tab="ulke">Ülkeler</button>
           <button class="admin-tab" data-tab="il">İller</button>
           <button class="admin-tab" data-tab="ilce">İlçeler</button>
+          <button class="admin-tab" data-tab="harita">🗺️ Harita</button>
         </div>
         <button id="cikis-btn" class="btn btn-secondary btn-sm">Çıkış Yap</button>
       </div>
@@ -186,6 +188,27 @@
             <div class="form-group">
               <label>İlçe Adı *</label>
               <input type="text" id="ilce-ad" required placeholder="Beşiktaş" />
+            </div>
+            <div class="form-group">
+              <label>Gezi Durumu</label>
+              <div class="durum-sec-wrap">
+                <label class="durum-sec-btn">
+                  <input type="radio" name="ilce-durum" value="gezilmedi" checked />
+                  <span class="durum-sec-ic durum-gezilmedi">⬜ Gezilmedi</span>
+                </label>
+                <label class="durum-sec-btn">
+                  <input type="radio" name="ilce-durum" value="gezildi" />
+                  <span class="durum-sec-ic durum-gezildi">✅ Gezildi</span>
+                </label>
+                <label class="durum-sec-btn">
+                  <input type="radio" name="ilce-durum" value="kismen" />
+                  <span class="durum-sec-ic durum-kismen">🔵 Kısmen</span>
+                </label>
+                <label class="durum-sec-btn">
+                  <input type="radio" name="ilce-durum" value="gecildi" />
+                  <span class="durum-sec-ic durum-gecildi">🟡 Yoldan Geçildi</span>
+                </label>
+              </div>
             </div>
             <div class="form-group">
               <label>Tanıtım Yazısı *</label>
@@ -324,7 +347,62 @@
             <div class="loading"><div class="spinner"></div><p>Yükleniyor...</p></div>
           </div>
         </div>
-      </div>
+      </div><!-- /tab-ilce -->
+
+      <!-- ===== HARİTA TAB ===== -->
+      <div class="tab-panel" id="tab-harita">
+        <div class="admin-card">
+          <h3>İlçe Haritası Düzenleyici</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
+            Haritada bir ilçeye tıkla → Firestore'daki ilçeyle eşleştir → durumunu seç → kaydet.
+          </p>
+
+          <!-- Seçilen ilçe bilgisi -->
+          <div id="harita-secim-panel" style="display:none;background:var(--bg);border:1.5px solid var(--brown-40);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);margin-bottom:3px;">Haritada Seçilen</div>
+                <div id="harita-secim-topo-ad" style="font-family:'Sanchez',serif;font-style:italic;color:var(--brown);font-size:1.05rem;"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <select id="harita-eslesme-select" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;background:var(--bg-card);color:var(--text-main);min-width:180px;">
+                  <option value="">— Firestore İlçesi Seç —</option>
+                </select>
+                <select id="harita-durum-select" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;background:var(--bg-card);color:var(--text-main);">
+                  <option value="gezilmedi">⬜ Gezilmedi</option>
+                  <option value="gezildi">✅ Gezildi</option>
+                  <option value="kismen">🔵 Kısmen</option>
+                  <option value="gecildi">🟡 Yoldan Geçildi</option>
+                </select>
+                <button id="harita-kaydet-btn" class="btn btn-primary btn-sm" style="width:auto;">Kaydet</button>
+                <button id="harita-iptal-btn" class="btn btn-secondary btn-sm" style="width:auto;">İptal</button>
+              </div>
+            </div>
+            <div id="harita-kaydet-alert" style="margin-top:10px;"></div>
+          </div>
+
+          <!-- Admin Haritası -->
+          <div id="admin-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:520px;gap:12px;color:var(--brown-60);">
+            <div class="spinner"></div><p>Harita yükleniyor...</p>
+          </div>
+          <div id="admin-harita" style="display:none;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;"></div>
+
+          <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
+              <span style="display:inline-block;width:14px;height:10px;background:#27ae60;border-radius:2px;"></span> Gezildi
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
+              <span style="display:inline-block;width:14px;height:10px;background:#2980b9;border-radius:2px;"></span> Kısmen
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
+              <span style="display:inline-block;width:14px;height:10px;background:#f39c12;border-radius:2px;"></span> Yoldan Geçildi
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
+              <span style="display:inline-block;width:14px;height:10px;background:#f5f0eb;border:1px solid #ccc;border-radius:2px;"></span> Gezilmedi
+            </div>
+          </div>
+        </div>
+      </div><!-- /tab-harita -->
 
     </div>
   </div>
@@ -360,6 +438,8 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
   <script type="module">
     import { db, auth } from './js/firebase-config.js';
     import {
@@ -1157,6 +1237,10 @@
 
       setVal('ilce-edit-id', id);
       setVal('ilce-ad', ilce.ad);
+      // Durum radio
+      const durumVal = ilce.durum || 'gezilmedi';
+      const durumEl = document.querySelector(`input[name="ilce-durum"][value="${durumVal}"]`);
+      if (durumEl) durumEl.checked = true;
       editorDoldur(ilce.aciklama);
       setVal('ilce-harita', ilce.haritaEmbed);
       setVal('ilce-instagram', ilce.instagram);
@@ -1224,9 +1308,11 @@
       btn.disabled = true; btn.textContent = 'Kaydediliyor...';
 
       try {
+        const durumRadio = document.querySelector('input[name="ilce-durum"]:checked');
         const data = {
           ilId: document.getElementById('ilce-il').value,
           ad: document.getElementById('ilce-ad').value.trim(),
+          durum: durumRadio ? durumRadio.value : 'gezilmedi',
           aciklama: document.getElementById('ilce-aciklama').value.trim(),
           fotograf: document.getElementById('ilce-fotograf').value,
           kapakFotograf: document.getElementById('ilce-kapak-fotograf').value,
@@ -1293,6 +1379,248 @@
       const filtrelenmis = iller.filter(i => i.ulkeId === ulkeId);
       ilceIlSelect.innerHTML = '<option value="">— İl Seç —</option>' +
         filtrelenmis.map(i => `<option value="${i.id}" ${i.id === seciliIlId ? 'selected' : ''}>${i.ad}</option>`).join('');
+    }
+
+    // ===== HARİTA SEKMESİ =====
+    let adminHarita = null;
+    let adminKatman = null;
+    let adminTopoData = null;
+    let seciliLayer = null;
+    let seciliTopoAd = '';
+
+    const ADMIN_RENKLER = {
+      gezildi:   { dolgu: '#27ae60', op: 0.80, kenar: '#1e8449' },
+      kismen:    { dolgu: '#2980b9', op: 0.70, kenar: '#1f618d' },
+      gecildi:   { dolgu: '#f39c12', op: 0.70, kenar: '#d68910' },
+      gezilmedi: { dolgu: '#f5f0eb', op: 0.55, kenar: '#b8a898' },
+    };
+
+    // Harita sekmesine ilk geçişte yükle
+    let adminHaritaYuklendi = false;
+
+    document.querySelectorAll('.admin-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.tab === 'harita' && !adminHaritaYuklendi) {
+          adminHaritaYuklendi = true;
+          setTimeout(adminHaritaYukle, 100); // DOM render için kısa bekle
+        }
+      });
+    });
+
+    async function adminHaritaYukle() {
+      try {
+        // Firestore ilçelerini zaten `ilceler` değişkeninde var, ama harita için yeniden çek
+        const [ilceSnap, ilSnap] = await Promise.all([
+          getDocs(collection(db, 'ilceler')),
+          getDocs(collection(db, 'iller')),
+        ]);
+
+        const illerMapH = {};
+        ilSnap.docs.forEach(d => { illerMapH[d.id] = d.data().ad; });
+
+        const ilcelerH = {};
+        const ilcelerHById = {};
+        ilceSnap.docs.forEach(d => {
+          const data = d.data();
+          const norm = adminNormalize(data.ad);
+          const obj = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMapH[data.ilId] || '' };
+          ilcelerH[norm] = obj;
+          ilcelerHById[d.id] = obj;
+        });
+
+        // Harita eşleştirme verisi — Firestore id → topo ilçe adı (manuel bağlantı)
+        // Bu veri Firestore'daki `haritaEslesme` koleksiyonundan gelecek
+        const eslesmeSnap = await getDocs(collection(db, 'haritaEslesme'));
+        const eslesmeMap = {}; // topoAd (normalized) → firestoreId
+        const eslesmeTers = {}; // firestoreId → topoAd (normalized)
+        eslesmeSnap.docs.forEach(d => {
+          const data = d.data();
+          eslesmeMap[data.topoAd] = data.ilceId;
+          eslesmeTers[data.ilceId] = data.topoAd;
+        });
+
+        // TopoJSON yükle
+        if (!adminTopoData) {
+          const resp = await fetch('https://gist.githubusercontent.com/ozanyusufoglu/9417ab1c17feee67414df52c8250f8bd/raw/turkey_simple.topojson');
+          adminTopoData = await resp.json();
+        }
+        const geojson = topojson.feature(adminTopoData, adminTopoData.objects.admin_level_6);
+
+        // Haritayı göster
+        document.getElementById('admin-harita-yukle').style.display = 'none';
+        const haritaEl = document.getElementById('admin-harita');
+        haritaEl.style.display = '';
+
+        adminHarita = L.map('admin-harita', {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          attributionControl: false,
+          zoomSnap: 0.5,
+        });
+
+        haritaEl.style.background = '#FDFAF6';
+
+        // İlçe seçim select'ini doldur
+        const eslesmeSelect = document.getElementById('harita-eslesme-select');
+        const ilcelerSirali = [...ilceSnap.docs]
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+        eslesmeSelect.innerHTML = '<option value="">— Firestore İlçesi Seç —</option>' +
+          ilcelerSirali.map(i => {
+            const ilAd = illerMapH[i.ilId] || '';
+            return `<option value="${i.id}">${i.ad}${ilAd ? ' — ' + ilAd : ''}</option>`;
+          }).join('');
+
+        // Haritada bir ilçe için durum belirle
+        function ilceDurumBul(topoAd) {
+          const normTopo = adminNormalize(topoAd);
+          // Önce manuel eşleştirme tablosuna bak
+          const eslesId = eslesmeMap[normTopo];
+          if (eslesId && ilcelerHById[eslesId]) return ilcelerHById[eslesId].durum;
+          // Otomatik normalize eşleştir
+          if (ilcelerH[normTopo]) return ilcelerH[normTopo].durum;
+          return 'gezilmedi';
+        }
+
+        function ilceIdBul(topoAd) {
+          const normTopo = adminNormalize(topoAd);
+          const eslesId = eslesmeMap[normTopo];
+          if (eslesId) return eslesId;
+          if (ilcelerH[normTopo]) return ilcelerH[normTopo].id;
+          return null;
+        }
+
+        adminKatman = L.geoJSON(geojson, {
+          style: feature => {
+            const durum = ilceDurumBul(feature.properties.name || '');
+            const r = ADMIN_RENKLER[durum] || ADMIN_RENKLER.gezilmedi;
+            return { fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: 0.7, opacity: 1 };
+          },
+          onEachFeature: (feature, layer) => {
+            const topoAd = feature.properties.name || '';
+
+            layer.bindTooltip(topoAd, {
+              sticky: true,
+              className: 'ilce-tooltip',
+              direction: 'top',
+              offset: [0, -4],
+            });
+
+            layer.on({
+              mouseover(e) {
+                if (layer !== seciliLayer) {
+                  e.target.setStyle({ weight: 2, fillOpacity: 0.95, color: '#9B6240' });
+                  e.target.bringToFront();
+                }
+              },
+              mouseout(e) {
+                if (layer !== seciliLayer) adminKatman.resetStyle(e.target);
+              },
+              click() {
+                // Önceki seçili layer'ı sıfırla
+                if (seciliLayer && seciliLayer !== layer) {
+                  adminKatman.resetStyle(seciliLayer);
+                }
+                seciliLayer = layer;
+                seciliTopoAd = topoAd;
+
+                // Seçili layer'ı vurgula
+                layer.setStyle({ weight: 3, color: '#9B6240', fillOpacity: 0.95 });
+                layer.bringToFront();
+
+                // Panel'i göster
+                document.getElementById('harita-secim-topo-ad').textContent = topoAd;
+                document.getElementById('harita-secim-panel').style.display = '';
+                document.getElementById('harita-kaydet-alert').innerHTML = '';
+
+                // Mevcut durum ve eşleştirmeyi set et
+                const mevcutId = ilceIdBul(topoAd);
+                if (mevcutId) {
+                  document.getElementById('harita-eslesme-select').value = mevcutId;
+                  const mevcutDurum = ilcelerHById[mevcutId]?.durum || 'gezilmedi';
+                  document.getElementById('harita-durum-select').value = mevcutDurum;
+                } else {
+                  document.getElementById('harita-eslesme-select').value = '';
+                  document.getElementById('harita-durum-select').value = 'gezilmedi';
+                }
+              }
+            });
+          }
+        }).addTo(adminHarita);
+
+        adminHarita.fitBounds(adminKatman.getBounds(), { padding: [10, 10] });
+
+        // ===== KAYDET BUTONU =====
+        document.getElementById('harita-kaydet-btn').onclick = async () => {
+          const ilceId  = document.getElementById('harita-eslesme-select').value;
+          const durum   = document.getElementById('harita-durum-select').value;
+          const alertEl = document.getElementById('harita-kaydet-alert');
+
+          if (!ilceId) {
+            alertEl.innerHTML = '<div class="alert alert-error">Lütfen bir Firestore ilçesi seç.</div>';
+            return;
+          }
+
+          const kaydetBtn = document.getElementById('harita-kaydet-btn');
+          kaydetBtn.disabled = true; kaydetBtn.textContent = 'Kaydediliyor...';
+
+          try {
+            const normTopo = adminNormalize(seciliTopoAd);
+
+            // 1) İlçenin durum alanını güncelle
+            await updateDoc(doc(db, 'ilceler', ilceId), { durum });
+
+            // 2) Eşleştirmeyi haritaEslesme koleksiyonuna kaydet
+            // Aynı topoAd için varsa güncelle, yoksa ekle
+            const mevcutDoc = eslesmeSnap.docs.find(d => d.data().topoAd === normTopo);
+            if (mevcutDoc) {
+              await updateDoc(doc(db, 'haritaEslesme', mevcutDoc.id), { topoAd: normTopo, ilceId });
+            } else {
+              await addDoc(collection(db, 'haritaEslesme'), { topoAd: normTopo, ilceId });
+            }
+
+            // 3) Haritada rengi güncelle
+            if (seciliLayer) {
+              const r = ADMIN_RENKLER[durum] || ADMIN_RENKLER.gezilmedi;
+              seciliLayer.setStyle({ fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: 0.7 });
+              seciliLayer = null;
+            }
+
+            // 4) Local map'i güncelle
+            eslesmeMap[normTopo] = ilceId;
+            if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
+
+            alertEl.innerHTML = '<div class="alert alert-success">✅ Kaydedildi!</div>';
+            document.getElementById('harita-eslesme-select').value = '';
+            document.getElementById('harita-secim-panel').style.display = 'none';
+
+          } catch (err) {
+            alertEl.innerHTML = `<div class="alert alert-error">Hata: ${err.message}</div>`;
+          } finally {
+            kaydetBtn.disabled = false; kaydetBtn.textContent = 'Kaydet';
+          }
+        };
+
+        // İptal butonu
+        document.getElementById('harita-iptal-btn').onclick = () => {
+          if (seciliLayer) { adminKatman.resetStyle(seciliLayer); seciliLayer = null; }
+          document.getElementById('harita-secim-panel').style.display = 'none';
+        };
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('admin-harita-yukle').innerHTML =
+          `<div class="empty-state"><p>Harita yüklenemedi: ${err.message}</p></div>`;
+      }
+    }
+
+    function adminNormalize(ad) {
+      return (ad || '')
+        .toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g, '')
+        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ş/g, 's')
+        .replace(/ç/g, 'c').replace(/ö/g, 'o').replace(/ü/g, 'u')
+        .trim();
     }
 
   </script>

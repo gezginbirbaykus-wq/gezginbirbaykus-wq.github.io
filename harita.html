@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gezi Haritam — Gezginbirbaykus</title>
+  <meta name="description" content="Gezginbirbaykus Türkiye ilçe gezi haritası." />
+  <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>" />
+  <style>
+    .harita-page { background: var(--bg); min-height: 100vh; }
+
+    .harita-stats {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 32px 0;
+    }
+
+    .stats-baslik {
+      font-family: 'Sanchez', serif;
+      font-size: 1.5rem;
+      font-style: italic;
+      color: var(--brown);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .stats-baslik::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, var(--border), transparent);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-kart {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-renk {
+      width: 13px; height: 13px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 2px solid rgba(0,0,0,0.1);
+    }
+    .stat-renk.gezildi   { background: #27ae60; }
+    .stat-renk.kismen    { background: #2980b9; }
+    .stat-renk.gecildi   { background: #f39c12; }
+    .stat-renk.gezilmedi { background: #ecf0f1; border-color: #bdc3c7; }
+
+    .stat-sayi { font-size: 1.4rem; font-weight: 700; color: var(--brown); line-height: 1; margin-bottom: 2px; }
+    .stat-etiket { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+    .progress-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+    .progress-label strong { color: var(--brown); }
+    .progress-bar-bg {
+      height: 9px;
+      background: var(--border-light);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+    }
+    .progress-bar-fill { height: 100%; transition: width 1s ease; }
+    .progress-bar-fill.gezildi { background: #27ae60; }
+    .progress-bar-fill.kismen  { background: #2980b9; }
+    .progress-bar-fill.gecildi { background: #f39c12; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--text-muted); }
+    .legend-renk { width: 16px; height: 10px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+    .legend-renk.gezildi   { background: #27ae60; }
+    .legend-renk.kismen    { background: #2980b9; }
+    .legend-renk.gecildi   { background: #f39c12; }
+    .legend-renk.gezilmedi { background: #f5f0eb; }
+
+    .harita-kapsayici {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px 60px;
+    }
+
+    #harita {
+      width: 100%;
+      height: 580px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+      cursor: default;
+    }
+
+    .harita-yukle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 580px;
+      gap: 16px;
+      color: var(--brown-60);
+    }
+
+    /* Leaflet genel */
+    .leaflet-container {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Custom tooltip (hover) */
+    .ilce-tooltip {
+      background: rgba(255,255,255,0.95);
+      border: 1px solid var(--border, #ddd);
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #2A1F16;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    [data-theme="dark"] .ilce-tooltip {
+      background: rgba(44,32,24,0.97);
+      color: #F0E6DA;
+      border-color: #4A3020;
+    }
+
+    .ilce-tooltip .tip-il {
+      font-weight: 400;
+      font-size: 0.72rem;
+      color: #9B6240;
+      display: block;
+      margin-top: 1px;
+    }
+
+    .ilce-tooltip .tip-durum {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    /* Leaflet attribution gizle */
+    .leaflet-control-attribution { display: none; }
+
+    [data-theme="dark"] #harita { background: #1E1610 !important; }
+
+    @media (max-width: 768px) {
+      .harita-stats, .harita-kapsayici { padding-left: 16px; padding-right: 16px; }
+      #harita, .harita-yukle { height: 380px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body class="harita-page">
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="./index.html" class="logo-area">
+        <img src="./assets/logo.png" alt="Gezginbirbaykus Logo" onerror="this.style.display='none'" />
+        <span class="logo-text">Gezginbirbaykus</span>
+      </a>
+      <div class="header-right">
+        <nav class="main-nav">
+          <a href="./index.html">Ana Sayfa</a>
+          <a href="./harita.html" class="active">Harita</a>
+        </nav>
+        <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
+      </div>
+    </div>
+  </header>
+
+  <section class="harita-stats">
+    <h2 class="stats-baslik">Gezi Haritam</h2>
+    <div class="stats-grid">
+      <div class="stat-kart">
+        <div class="stat-renk gezildi"></div>
+        <div>
+          <div class="stat-sayi" id="sayi-gezildi">—</div>
+          <div class="stat-etiket">Gezildi</div>
+        </div>
+      </div>
+      <div class="stat-kart">
+        <div class="stat-renk kismen"></div>
+        <div>
+          <div class="stat-sayi" id="sayi-kismen">—</div>
+          <div class="stat-etiket">Kısmen</div>
+        </div>
+      </div>
+      <div class="stat-kart">
+        <div class="stat-renk gecildi"></div>
+        <div>
+          <div class="stat-sayi" id="sayi-gecildi">—</div>
+          <div class="stat-etiket">Yoldan Geçildi</div>
+        </div>
+      </div>
+      <div class="stat-kart">
+        <div class="stat-renk gezilmedi"></div>
+        <div>
+          <div class="stat-sayi" id="sayi-toplam">973</div>
+          <div class="stat-etiket">Toplam İlçe</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Türkiye ilçelerini <strong id="progress-yuzde">0%</strong> oranında gezdim</span>
+        <span id="progress-metin" style="color:var(--text-faint);font-size:0.76rem;"></span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill gezildi" id="bar-gezildi" style="width:0%"></div>
+        <div class="progress-bar-fill kismen"  id="bar-kismen"  style="width:0%"></div>
+        <div class="progress-bar-fill gecildi" id="bar-gecildi" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-renk gezildi"></div> Gezildi — tıkla içeriğe git</div>
+      <div class="legend-item"><div class="legend-renk kismen"></div> Kısmen Gezildi</div>
+      <div class="legend-item"><div class="legend-renk gecildi"></div> Yoldan Geçildi</div>
+      <div class="legend-item"><div class="legend-renk gezilmedi"></div> Gezilmedi</div>
+    </div>
+  </section>
+
+  <section class="harita-kapsayici">
+    <div id="harita-yukle" class="harita-yukle">
+      <div class="spinner"></div>
+      <p>Harita yükleniyor...</p>
+    </div>
+    <div id="harita" style="display:none;"></div>
+  </section>
+
+  <footer class="site-footer">
+    <p class="footer-logo">Gezginbirbaykus</p>
+    <a href="https://www.instagram.com/gezginbirbaykus_/" target="_blank" rel="noopener noreferrer" class="footer-insta">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      @gezginbirbaykus_
+    </a>
+    <p class="footer-copy">© 2026 — Tüm hakları saklıdır.</p>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
+  <script type="module">
+    import { db } from './js/firebase-config.js';
+    import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+
+    const toggle = document.getElementById('theme-toggle');
+    const saved  = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', saved);
+    toggle.addEventListener('click', () => {
+      const cur  = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    });
+
+    const RENKLER = {
+      gezildi:   { dolgu: '#27ae60', op: 0.80, kenar: '#1e8449', kw: 0.8 },
+      kismen:    { dolgu: '#2980b9', op: 0.70, kenar: '#1f618d', kw: 0.8 },
+      gecildi:   { dolgu: '#f39c12', op: 0.70, kenar: '#d68910', kw: 0.8 },
+      gezilmedi: { dolgu: '#f5f0eb', op: 0.55, kenar: '#b8a898', kw: 0.5 },
+    };
+
+    const TOPLAM = 973;
+
+    async function yukle() {
+      try {
+        const [ilceSnap, ilSnap, eslesmeSnap] = await Promise.all([
+          getDocs(collection(db, 'ilceler')),
+          getDocs(collection(db, 'iller')),
+          getDocs(collection(db, 'haritaEslesme')),
+        ]);
+
+        const illerMap = {};
+        ilSnap.docs.forEach(d => { illerMap[d.id] = d.data().ad; });
+
+        // İlçeler
+        const ilceler = {};
+        const ilcelerById = {};
+        ilceSnap.docs.forEach(d => {
+          const data = d.data();
+          const norm = normalize(data.ad);
+          const obj = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMap[data.ilId] || '' };
+          ilceler[norm] = obj;
+          ilcelerById[d.id] = obj;
+        });
+
+        // Manuel eşleştirme: topoAd (normalized) → ilceId
+        const eslesmeMap = {};
+        eslesmeSnap.docs.forEach(d => {
+          const data = d.data();
+          if (data.topoAd && data.ilceId) eslesmeMap[data.topoAd] = data.ilceId;
+        });
+
+        // ilçeleri hem normalize adıyla hem orijinal adıyla indexle
+        const ilceler = {};
+        ilceSnap.docs.forEach(d => {
+          const data = d.data();
+          const norm = normalize(data.ad);
+          ilceler[norm] = {
+            id:    d.id,
+            ad:    data.ad,
+            durum: data.durum || 'gezilmedi',
+            il:    illerMap[data.ilId] || '',
+          };
+        });
+
+        // İstatistikler
+        let g = 0, k = 0, gc = 0;
+        Object.values(ilceler).forEach(i => {
+          if (i.durum === 'gezildi') g++;
+          else if (i.durum === 'kismen') k++;
+          else if (i.durum === 'gecildi') gc++;
+        });
+
+        document.getElementById('sayi-gezildi').textContent = g;
+        document.getElementById('sayi-kismen').textContent  = k;
+        document.getElementById('sayi-gecildi').textContent = gc;
+
+        const oran = ((g + k * 0.5 + gc * 0.25) / TOPLAM * 100);
+        document.getElementById('progress-yuzde').textContent = oran.toFixed(1) + '%';
+        document.getElementById('progress-metin').textContent = `${g} tam · ${k} kısmi · ${gc} geçiş`;
+        document.getElementById('bar-gezildi').style.width = (g  / TOPLAM * 100).toFixed(2) + '%';
+        document.getElementById('bar-kismen').style.width  = (k  / TOPLAM * 100).toFixed(2) + '%';
+        document.getElementById('bar-gecildi').style.width = (gc / TOPLAM * 100).toFixed(2) + '%';
+
+        // TopoJSON yükle
+        const resp    = await fetch('https://gist.githubusercontent.com/ozanyusufoglu/9417ab1c17feee67414df52c8250f8bd/raw/turkey_simple.topojson');
+        const topo    = await resp.json();
+        const geojson = topojson.feature(topo, topo.objects.admin_level_6);
+
+        // Haritayı göster
+        document.getElementById('harita-yukle').style.display = 'none';
+        const haritaEl = document.getElementById('harita');
+        haritaEl.style.display = '';
+
+        const harita = L.map('harita', {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          attributionControl: false,
+          zoomSnap: 0.5,
+        });
+
+        // Arka plan teması
+        const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+        haritaEl.style.background = isDark() ? '#1E1610' : '#FDFAF6';
+
+        // Gece modu değişince arka planı güncelle
+        new MutationObserver(() => {
+          haritaEl.style.background = isDark() ? '#1E1610' : '#FDFAF6';
+        }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        // GeoJSON katmanı
+        const katman = L.geoJSON(geojson, {
+          style: feature => {
+            const veri  = ilceBul(ilceler, ilcelerById, eslesmeMap, feature.properties.name || '');
+            const durum = veri ? veri.durum : 'gezilmedi';
+            const r     = RENKLER[durum] || RENKLER.gezilmedi;
+            return { fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: r.kw, opacity: 1 };
+          },
+          onEachFeature: (feature, layer) => {
+            const veri    = ilceBul(ilceler, ilcelerById, eslesmeMap, feature.properties.name || '');
+            const durum   = veri ? veri.durum : 'gezilmedi';
+            const topoAd  = feature.properties.name || '';
+            const gosterAd = veri ? veri.ad : topoAd;
+            const ilAd    = veri ? veri.il : '';
+
+            // Renk noktası
+            const renkHex = RENKLER[durum]?.dolgu || '#bdc3c7';
+
+            // Tooltip — hover'da ilçe adı + il adı
+            layer.bindTooltip(`
+              <span class="tip-durum" style="background:${renkHex};"></span>${gosterAd}
+              ${ilAd ? `<span class="tip-il">${ilAd}</span>` : ''}
+            `, {
+              sticky: true,
+              className: 'ilce-tooltip',
+              direction: 'top',
+              offset: [0, -4],
+            });
+
+            layer.on({
+              mouseover(e) {
+                e.target.setStyle({ weight: 2.5, fillOpacity: 0.95, color: '#5C4A3A' });
+                e.target.bringToFront();
+              },
+              mouseout(e) {
+                katman.resetStyle(e.target);
+              },
+              click() {
+                if (durum === 'gezildi' && veri) {
+                  // Direkt ilçe sayfasına git
+                  window.location.href = `./ilce.html?id=${veri.id}`;
+                } else if (durum === 'kismen' || durum === 'gecildi') {
+                  // Kısa bilgi popup
+                  const durumMetin = durum === 'kismen' ? '🔵 Kısmen Gezildi' : '🟡 Yoldan Geçildi';
+                  layer.bindPopup(`
+                    <div style="padding:12px 14px;min-width:150px;font-family:'Inter',sans-serif;">
+                      <div style="font-family:'Sanchez',serif;font-style:italic;color:#9B6240;font-size:0.95rem;margin-bottom:4px;">${gosterAd}</div>
+                      ${ilAd ? `<div style="font-size:0.72rem;color:#8C7A6A;margin-bottom:8px;">${ilAd}</div>` : ''}
+                      <div style="font-size:0.78rem;color:#6E6E63;">${durumMetin}</div>
+                      <div style="font-size:0.72rem;color:#aaa;margin-top:6px;">İçerik henüz eklenmedi</div>
+                    </div>`, { maxWidth: 220 }).openPopup();
+                }
+                // gezilmedi ise hiçbir şey yapma
+              }
+            });
+          }
+        }).addTo(harita);
+
+        harita.fitBounds(katman.getBounds(), { padding: [12, 12] });
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('harita-yukle').innerHTML = `
+          <div class="empty-state">
+            <div class="owl-icon">🦉</div>
+            <p>Harita yüklenemedi. Lütfen sayfayı yenileyin.</p>
+          </div>`;
+      }
+    }
+
+    // İlçe isim eşleştirme — önce haritaEslesme, sonra normalize
+    function ilceBul(ilceler, ilcelerById, eslesmeMap, topoAd) {
+      if (!topoAd) return null;
+      const norm = normalize(topoAd);
+      // 1) Manuel eşleştirme tablosu
+      if (eslesmeMap[norm] && ilcelerById[eslesmeMap[norm]]) return ilcelerById[eslesmeMap[norm]];
+      // 2) Otomatik normalize
+      if (ilceler[norm]) return ilceler[norm];
+      // 3) Partial match
+      const parcalar = norm.split(/\s+/);
+      for (const p of parcalar) {
+        if (p.length > 3 && ilceler[p]) return ilceler[p];
+      }
+      return null;
+    }
+
+    function normalize(ad) {
+      return ad
+        .toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g, '')
+        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ş/g, 's')
+        .replace(/ç/g, 'c').replace(/ö/g, 'o').replace(/ü/g, 'u')
+        .trim();
+    }
+
+    yukle();
+  </script>
+</body>
+</html>
