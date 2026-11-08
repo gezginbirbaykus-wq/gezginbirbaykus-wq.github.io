@@ -1417,11 +1417,12 @@
 
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
 
-        // SVG parse — DOMParser kullan
+        // SVG parse
         const svgText2 = await svgResp.text();
-        const parser2  = new DOMParser();
-        const svgDoc2  = parser2.parseFromString(svgText2, 'image/svg+xml');
-        const svg      = document.adoptNode(svgDoc2.documentElement);
+        const tmp2 = document.createElement('div');
+        tmp2.innerHTML = svgText2.replace(/<\?xml[^?]*\?>/,'');
+        const svg = tmp2.querySelector('svg');
+        if (!svg) throw new Error('SVG parse edilemedi');
         svg.querySelectorAll('style').forEach(s => s.remove());
 
         const vbStr2  = svg.getAttribute('viewBox') || svg.getAttribute('viewbox') || '0 0 800 264';

@@ -376,11 +376,13 @@
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
         const IL_KALIN = 1.4, ILCE_INCE = 0.4;
 
-        // SVG parse — DOMParser kullan (<?xml?> tagını doğru işler)
+        // SVG parse
         const svgText = await svgResp.text();
-        const parser  = new DOMParser();
-        const svgDoc  = parser.parseFromString(svgText, 'image/svg+xml');
-        const svg     = document.adoptNode(svgDoc.documentElement);
+        // <?xml?> ile başlayan dosyalar için text/html parse kullan
+        const tmp = document.createElement('div');
+        tmp.innerHTML = svgText.replace(/<\?xml[^?]*\?>/,'');
+        const svg = tmp.querySelector('svg');
+        if (!svg) throw new Error('SVG parse edilemedi');
         svg.querySelectorAll('style').forEach(s => s.remove());
 
         const vbStr  = svg.getAttribute('viewBox') || svg.getAttribute('viewbox') || '0 0 800 264';
