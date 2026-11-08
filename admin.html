@@ -1490,8 +1490,13 @@
               mouseover(e) {
                 if (layer !== seciliLayer) e.target.setStyle({ weight:1.5, fillOpacity:0.95, color:'#9B6240' });
                 e.target.bringToFront();
-                if (ad) {
-                  adminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${ad}${il?`<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>`:''}`;
+                const ttIlceId = eslesmeMap[idx];
+                const ttVeri   = ttIlceId ? ilcelerHById[ttIlceId] : null;
+                const ttDurum  = ttVeri ? ttVeri.durum : 'gezilmedi';
+                const ttAd     = ttVeri ? ttVeri.ad : (eslesmeTopoAd[idx] || '');
+                const ttIl     = ttVeri ? ttVeri.il : (eslesmeTopoIl[idx] || '');
+                if (ttAd) {
+                  adminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[ttDurum]};margin-right:6px;vertical-align:middle;"></span>${ttAd}${ttIl?`<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${ttIl}</span>`:''}`;
                   adminTooltip.style.display='block';
                 } else {
                   adminTooltip.style.display='none';
@@ -1511,12 +1516,19 @@
                 seciliIdx   = idx;
                 layer.setStyle({ weight:2.5, color:'#9B6240', fillOpacity:0.95 });
 
-                document.getElementById('harita-topo-ad-input').value = ad;
-                document.getElementById('harita-topo-il-input').value = il;
+                // Her tıklamada güncel değerleri map'ten oku
+                const guncelIlceId = eslesmeMap[idx];
+                const guncelVeri   = guncelIlceId ? ilcelerHById[guncelIlceId] : null;
+                const guncelDurum  = guncelVeri ? guncelVeri.durum : 'gezilmedi';
+                const guncelAd     = guncelVeri ? guncelVeri.ad : (eslesmeTopoAd[idx] || '');
+                const guncelIl     = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
+
+                document.getElementById('harita-topo-ad-input').value = guncelAd;
+                document.getElementById('harita-topo-il-input').value = guncelIl;
                 document.getElementById('harita-secim-panel').style.display = '';
                 document.getElementById('harita-kaydet-alert').innerHTML = '';
-                document.getElementById('harita-eslesme-select').value = ilceId || '';
-                document.getElementById('harita-durum-select').value   = durum;
+                document.getElementById('harita-eslesme-select').value = guncelIlceId || '';
+                document.getElementById('harita-durum-select').value   = guncelDurum;
               }
             });
           }
@@ -1576,8 +1588,6 @@
               eslesmeMap[seciliIdx] = ilceId;
               if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
             }
-
-            // 4) Haritada rengi anında güncelle
             if (seciliLayer) {
               const yeniDurum = ilceId ? durum : 'gezilmedi';
               seciliLayer.setStyle({ fillColor:RENK[yeniDurum], fillOpacity: yeniDurum==='gezilmedi'?0.6:0.85, color:'#b8a898', weight:0.5 });
