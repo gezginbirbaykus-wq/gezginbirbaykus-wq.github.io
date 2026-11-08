@@ -71,10 +71,12 @@
       </div>
 
       <div class="harita-legend">
-        <span><span class="hl-dot gezildi"></span> Gezildi</span>
-        <span><span class="hl-dot kismen"></span> Kısmen</span>
-        <span><span class="hl-dot gecildi"></span> Yoldan Geçildi</span>
-        <span><span class="hl-dot gezilmedi"></span> Gezilmedi</span>
+        <span><span class="hl-dot" style="background:#1a7a3a;"></span> 5 — Her yer</span>
+        <span><span class="hl-dot" style="background:#4CAF50;"></span> 4 — Çok</span>
+        <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
+        <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
+        <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan geçtim</span>
+        <span><span class="hl-dot gezilmedi"></span> 0 — Gitmedim</span>
       </div>
 
       <!-- SVG harita -->
@@ -341,7 +343,8 @@
         const byId = {}, byNorm = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
-          const obj  = { id:d.id, ad:data.ad, durum:data.durum||'gezilmedi', il:illerMap[data.ilId]||'' };
+          const puan = data.puan ?? (data.durum==='gezildi'?5:data.durum==='kismen'?3:data.durum==='gecildi'?1:0);
+          const obj  = { id:d.id, ad:data.ad, puan, il:illerMap[data.ilId]||'' };
           byId[d.id] = obj;
           byNorm[hn(data.ad)] = obj;
         });
@@ -357,16 +360,18 @@
             if (data.ilceId) eslesme[data.svgId] = data.ilceId;
             if (data.topoAd) eslesmeTopoAd[data.svgId] = data.topoAd;
             if (data.topoIl) eslesmeTopoIl[data.svgId] = data.topoIl;
-            if (data.durum)  eslesmeTopoKendi[data.svgId] = data.durum;
+            if (data.puan !== undefined) eslesmeTopoKendi[data.svgId] = data.puan;
+            else if (data.durum) eslesmeTopoKendi[data.svgId] = (data.durum==='gezildi'?5:data.durum==='kismen'?3:data.durum==='gecildi'?1:0);
           }
         });
 
         // İstatistikler
         let g=0, k=0, gc=0;
         Object.values(byNorm).forEach(i => {
-          if      (i.durum==='gezildi')  g++;
-          else if (i.durum==='kismen')   k++;
-          else if (i.durum==='gecildi')  gc++;
+          const p = i.puan ?? 0;
+          if      (p >= 4) g++;
+          else if (p >= 2) k++;
+          else if (p >= 1) gc++;
         });
         document.getElementById('sayi-gezildi').textContent = g;
         document.getElementById('sayi-kismen').textContent  = k;
@@ -380,7 +385,16 @@
         document.getElementById('bar-kismen').style.width  = (k /TOPLAM*100).toFixed(2)+'%';
         document.getElementById('bar-gecildi').style.width = (gc/TOPLAM*100).toFixed(2)+'%';
 
-        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#f5f0eb' };
+        const RENK = {
+          5: '#1a7a3a',
+          4: '#4CAF50',
+          3: '#8BC34A',
+          2: '#FFC107',
+          1: '#FF7043',
+          0: '#f5f0eb'
+        };
+        function puanRenk(p) { return RENK[p] ?? RENK[0]; }
+        function puanOpak(p) { return p === 0 ? 0.6 : 0.85; }
 
         document.getElementById('h-yukle').style.display = 'none';
         const haritaEl = document.getElementById('h-leaflet');
@@ -420,10 +434,10 @@
             const idx   = String(feature.properties._index ?? ilceGeo.features.indexOf(feature));
             const ilceId = eslesme[idx];
             const veri   = ilceId ? byId[ilceId] : null;
-            const durum  = veri ? veri.durum : (eslesmeTopoKendi[idx] || 'gezilmedi');
+            const puan   = veri ? veri.puan : (eslesmeTopoKendi[idx] ?? 0);
             return {
-              fillColor:   RENK[durum],
-              fillOpacity: durum==='gezilmedi' ? 0.6 : 0.8,
+              fillColor:   puanRenk(puan),
+              fillOpacity: puanOpak(puan),
               color:       '#b8a898',
               weight:      0.5,
               opacity:     1,
@@ -433,7 +447,7 @@
             const idx    = String(ilceGeo.features.indexOf(feature));
             const ilceId = eslesme[idx];
             const veri   = ilceId ? byId[ilceId] : null;
-            const durum  = veri ? veri.durum : (eslesmeTopoKendi[idx] || 'gezilmedi');
+            const puan   = veri ? veri.puan : (eslesmeTopoKendi[idx] ?? 0);
             const ad     = veri ? veri.ad : (eslesmeTopoAd[idx] || '');
             const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
 
@@ -442,7 +456,7 @@
                 e.target.setStyle({ weight: 1.5, fillOpacity: 0.95, color: '#7a5540' });
                 e.target.bringToFront();
                 if (ad) {
-                  tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.2);"></span>${ad}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>${durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
+                  tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${puanRenk(puan)};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.2);"></span>${ad}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>${puan>=4?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
                   tooltip.style.display = 'block';
                 }
               },
@@ -455,7 +469,7 @@
                 tooltip.style.top  = (e.originalEvent.clientY-10)+'px';
               },
               click() {
-                if (durum==='gezildi' && veri) window.location.href = `./ilce.html?id=${veri.id}`;
+                if (puan >= 4 && veri) window.location.href = `./ilce.html?id=${veri.id}`;
               }
             });
           }
