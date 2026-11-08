@@ -53,10 +53,10 @@
         <h2 class="section-title">Gezi Haritam</h2>
         <a href="./harita.html" class="anasayfa-harita-link">Tam Ekran →</a>
       </div>
-      <div id="anasayfa-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:320px;gap:12px;color:var(--brown-60);">
+      <div id="anasayfa-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:420px;gap:12px;color:var(--brown-60);">
         <div class="spinner"></div><p>Harita yükleniyor...</p>
       </div>
-      <div id="anasayfa-harita" style="display:none;height:320px;border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:48px;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
+      <div id="anasayfa-harita" style="display:none;height:420px;border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:52px;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
     </div>
 
     <div class="kesfet-header">
@@ -341,12 +341,14 @@
         haritaEl.style.display = '';
 
         const harita = L.map('anasayfa-harita', {
-          zoomControl: false,
-          scrollWheelZoom: false,
-          doubleClickZoom: false,
-          dragging: false,
-          touchZoom: false,
+          zoomControl: true,
+          scrollWheelZoom: false,  // scroll ile zoom yok (sayfa kaydırmasını engeller)
+          doubleClickZoom: true,
+          dragging: true,
+          touchZoom: true,
           attributionControl: false,
+          zoomSnap: 0.25,
+          zoomDelta: 0.5,
         });
 
         haritaEl.style.background = '#FDFAF6';

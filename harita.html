@@ -173,8 +173,32 @@
       vertical-align: middle;
     }
 
-    /* Leaflet attribution gizle */
-    .leaflet-control-attribution { display: none; }
+    /* Custom tooltip z-index */
+    .leaflet-tooltip {
+      z-index: 1000 !important;
+    }
+
+    /* Zoom kontrol stili */
+    .leaflet-control-zoom {
+      border: 1px solid var(--border) !important;
+      border-radius: 10px !important;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--bg-card) !important;
+      color: var(--brown) !important;
+      border-color: var(--border) !important;
+      font-size: 1rem !important;
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background: var(--brown-10) !important;
+    }
 
     [data-theme="dark"] #harita { background: #1E1610 !important; }
 
@@ -375,7 +399,8 @@
           scrollWheelZoom: true,
           doubleClickZoom: true,
           attributionControl: false,
-          zoomSnap: 0.5,
+          zoomSnap: 0.25,
+          zoomDelta: 0.5,
         });
 
         // Arka plan teması
