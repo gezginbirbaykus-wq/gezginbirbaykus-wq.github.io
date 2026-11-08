@@ -4,44 +4,24 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gezi Haritam — Gezginbirbaykus</title>
-  <meta name="description" content="Gezginbirbaykus Türkiye ilçe gezi haritası." />
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>" />
   <style>
     .harita-page { background: var(--bg); min-height: 100vh; }
 
-    .harita-stats {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 32px 32px 0;
-    }
-    .stats-baslik {
-      font-family: 'Sanchez', serif;
-      font-size: 1.5rem;
-      font-style: italic;
-      color: var(--brown);
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .stats-baslik::after { content:''; flex:1; height:1px; background:linear-gradient(to right, var(--border), transparent); }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+    /* İstatistik */
+    .harita-stats { max-width: 1200px; margin: 0 auto; padding: 32px 32px 0; }
+    .stats-baslik { font-family:'Sanchez',serif; font-size:1.5rem; font-style:italic; color:var(--brown); margin-bottom:24px; display:flex; align-items:center; gap:16px; }
+    .stats-baslik::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--border),transparent); }
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:20px; }
     .stat-kart { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:12px; }
     .stat-renk { width:13px; height:13px; border-radius:50%; flex-shrink:0; border:2px solid rgba(0,0,0,0.1); }
     .stat-renk.gezildi   { background:#27ae60; }
     .stat-renk.kismen    { background:#2980b9; }
     .stat-renk.gecildi   { background:#f39c12; }
     .stat-renk.gezilmedi { background:#ecf0f1; border-color:#bdc3c7; }
-    .stat-sayi  { font-size:1.4rem; font-weight:700; color:var(--brown); line-height:1; margin-bottom:2px; }
-    .stat-etiket{ font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
-
+    .stat-sayi   { font-size:1.4rem; font-weight:700; color:var(--brown); line-height:1; margin-bottom:2px; }
+    .stat-etiket { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
     .progress-wrap { background:var(--bg-card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; margin-bottom:20px; }
     .progress-label { display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.84rem; color:var(--text-muted); }
     .progress-label strong { color:var(--brown); }
@@ -50,7 +30,6 @@
     .progress-bar-fill.gezildi { background:#27ae60; }
     .progress-bar-fill.kismen  { background:#2980b9; }
     .progress-bar-fill.gecildi { background:#f39c12; }
-
     .legend { display:flex; flex-wrap:wrap; gap:14px; margin-bottom:20px; }
     .legend-item { display:flex; align-items:center; gap:7px; font-size:0.8rem; color:var(--text-muted); }
     .legend-renk { width:16px; height:10px; border-radius:3px; border:1px solid rgba(0,0,0,0.1); flex-shrink:0; }
@@ -59,79 +38,72 @@
     .legend-renk.gecildi   { background:#f39c12; }
     .legend-renk.gezilmedi { background:#f5f0eb; }
 
-    /* SVG HARİTA — sehir ve ilce stilleri */
-    .svg-harita-wrap svg,
-    .svg-harita-mini-wrap svg {
+    /* Harita kapsayıcı */
+    .harita-kapsayici { max-width: 1200px; margin: 0 auto; padding: 0 32px 60px; }
+
+    .svg-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+      position: relative;
+      user-select: none;
+    }
+
+    .svg-wrap svg {
       width: 100%;
       height: auto;
       display: block;
+      cursor: grab;
     }
 
-    /* Tüm path'ler için default */
-    .svg-harita-wrap svg path,
-    .svg-harita-mini-wrap svg path {
+    .svg-wrap svg:active { cursor: grabbing; }
+
+    /* Tüm path default */
+    .svg-wrap svg path {
       fill: #f0ece6;
-      stroke: #d4c4b8;
-      stroke-width: 0.3px;
-      transition: fill 0.12s, opacity 0.12s;
+      stroke: #c8b8aa;
+      stroke-width: 0.4px;
+      vector-effect: non-scaling-stroke;
     }
 
-    /* İl sınırları — kalın */
-    .svg-harita-wrap svg .sehir > path,
-    .svg-harita-mini-wrap svg .sehir > path {
-      stroke: #8a6a50 !important;
-      stroke-width: 1.2px !important;
+    /* İlçe hover */
+    .svg-wrap svg g.ilce:hover > path { opacity: 0.75; }
+
+    /* Zoom butonları */
+    .zoom-ctrl {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 10;
     }
 
-    /* İlçe renkleri */
-    .svg-harita-wrap svg .ilce > path,
-    .svg-harita-mini-wrap svg .ilce > path {
-      fill: #f0ece6;
-      stroke: #c4b5a8;
-      stroke-width: 0.35px;
-      cursor: default;
-    }
-
-    .svg-harita-wrap svg .ilce.gezildi > path,
-    .svg-harita-mini-wrap svg .ilce.gezildi > path {
-      fill: #27ae60 !important;
-      stroke: #1e8449 !important;
-      stroke-width: 0.5px;
+    .zoom-btn {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--brown);
+      font-size: 1.1rem;
       cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: background 0.15s;
+      font-weight: 700;
     }
-
-    .svg-harita-wrap svg .ilce.kismen > path,
-    .svg-harita-mini-wrap svg .ilce.kismen > path {
-      fill: #2980b9 !important;
-      stroke: #1f618d !important;
-      stroke-width: 0.5px;
-    }
-
-    .svg-harita-wrap svg .ilce.gecildi > path,
-    .svg-harita-mini-wrap svg .ilce.gecildi > path {
-      fill: #f39c12 !important;
-      stroke: #d68910 !important;
-      stroke-width: 0.5px;
-    }
-
-    .svg-harita-wrap svg .ilce.gezilmedi > path,
-    .svg-harita-mini-wrap svg .ilce.gezilmedi > path {
-      fill: #f0ece6 !important;
-      stroke: #c4b5a8 !important;
-    }
-
-    .svg-harita-wrap svg .ilce:hover > path,
-    .svg-harita-mini-wrap svg .ilce:hover > path {
-      opacity: 0.7;
-    }
+    .zoom-btn:hover { background: var(--brown-10); }
 
     /* Tooltip */
-    #harita-tooltip {
+    #h-tooltip {
       position: fixed;
       background: rgba(255,255,255,0.97);
       border: 1px solid #DEB898;
       border-radius: 10px;
-      padding: 8px 14px;
+      padding: 8px 13px;
       font-family: 'Inter', sans-serif;
       font-size: 0.82rem;
       font-weight: 700;
@@ -141,46 +113,20 @@
       z-index: 9999;
       display: none;
       white-space: nowrap;
-      max-width: 220px;
     }
-
-    [data-theme="dark"] #harita-tooltip {
+    [data-theme="dark"] #h-tooltip {
       background: rgba(44,32,24,0.97);
       color: #F0E6DA;
       border-color: #4A3020;
     }
+    #h-tooltip .t-il   { display:block; font-size:0.71rem; color:#9B6240; font-weight:400; margin-top:2px; }
+    #h-tooltip .t-hint { display:block; font-size:0.7rem; color:#27ae60; font-weight:500; margin-top:2px; }
 
-    #harita-tooltip .tt-durum {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 6px;
-      vertical-align: middle;
-    }
-    #harita-tooltip .tt-il {
-      display: block;
-      font-size: 0.72rem;
-      color: #9B6240;
-      font-weight: 400;
-      margin-top: 2px;
-    }
-    #harita-tooltip .tt-link-hint {
-      display: block;
-      font-size: 0.7rem;
-      color: #27ae60;
-      font-weight: 500;
-      margin-top: 3px;
-    }
-
-    /* Yükleniyor */
-    .harita-yukle {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; min-height: 300px; gap: 16px; color: var(--brown-60);
-    }
+    .harita-yukle { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:320px; gap:16px; color:var(--brown-60); }
 
     @media (max-width: 768px) {
-      .harita-stats, .harita-kapsayici { padding-left: 16px; padding-right: 16px; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .harita-stats, .harita-kapsayici { padding-left:16px; padding-right:16px; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
     }
   </style>
 </head>
@@ -231,21 +177,23 @@
 
   <section class="harita-kapsayici">
     <div id="harita-yukle" class="harita-yukle">
-      <div class="spinner"></div>
-      <p>Harita yükleniyor...</p>
+      <div class="spinner"></div><p>Harita yükleniyor...</p>
     </div>
-    <div class="svg-harita-wrap" id="svg-wrap" style="display:none;">
-      <!-- SVG buraya yüklenecek -->
+    <div class="svg-wrap" id="svg-wrap" style="display:none;">
+      <div class="zoom-ctrl">
+        <button class="zoom-btn" id="z-in">+</button>
+        <button class="zoom-btn" id="z-out">−</button>
+        <button class="zoom-btn" id="z-reset" style="font-size:0.75rem;">⌂</button>
+      </div>
     </div>
   </section>
 
-  <!-- Tooltip -->
-  <div id="harita-tooltip"></div>
+  <div id="h-tooltip"></div>
 
   <footer class="site-footer">
     <p class="footer-logo">Gezginbirbaykus</p>
     <a href="https://www.instagram.com/gezginbirbaykus_/" target="_blank" rel="noopener noreferrer" class="footer-insta">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
       @gezginbirbaykus_
     </a>
     <p class="footer-copy">© 2026 — Tüm hakları saklıdır.</p>
@@ -255,7 +203,7 @@
     import { db } from './js/firebase-config.js';
     import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-    // Gece modu
+    // Tema
     const toggle = document.getElementById('theme-toggle');
     const saved  = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', saved);
@@ -266,13 +214,11 @@
       localStorage.setItem('theme', next);
     });
 
-    const RENKLER_HEX = {
-      gezildi:   '#27ae60',
-      kismen:    '#2980b9',
-      gecildi:   '#f39c12',
-      gezilmedi: '#bdc3c7',
-    };
-
+    const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#c8b8aa' };
+    const IL_SINIR_RENK   = '#7a5540';
+    const IL_SINIR_KALIN  = 1.4;
+    const ILCE_SINIR_RENK = '#c8b8aa';
+    const ILCE_SINIR_INCE = 0.4;
     const TOPLAM = 973;
 
     async function yukle() {
@@ -284,201 +230,195 @@
           fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
+        // Veriler
         const illerMap = {};
         ilSnap.docs.forEach(d => { illerMap[d.id] = d.data().ad; });
 
-        const ilcelerByNorm = {}, ilcelerById = {};
+        const byNorm = {}, byId = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
-          const obj  = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMap[data.ilId] || '' };
-          ilcelerByNorm[norm(data.ad)] = obj;
-          ilcelerById[d.id] = obj;
+          const obj  = { id:d.id, ad:data.ad, durum:data.durum||'gezilmedi', il:illerMap[data.ilId]||'' };
+          byNorm[n(data.ad)] = obj;
+          byId[d.id] = obj;
         });
 
-        // Manuel eşleştirme (haritaEslesme koleksiyonu)
-        const eslesme = {}; // svgId → ilceId
+        const eslesme = {};
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.svgId && data.ilceId) eslesme[data.svgId] = data.ilceId;
-          // Eski format desteği (topoAd)
-          if (data.topoAd && data.ilceId) eslesme[norm(data.topoAd)] = data.ilceId;
+          if (data.svgId  && data.ilceId) eslesme[data.svgId]       = data.ilceId;
+          if (data.topoAd && data.ilceId) eslesme[n(data.topoAd)]   = data.ilceId;
         });
 
         // İstatistikler
-        let g = 0, k = 0, gc = 0;
-        Object.values(ilcelerByNorm).forEach(i => {
-          if      (i.durum === 'gezildi')  g++;
-          else if (i.durum === 'kismen')   k++;
-          else if (i.durum === 'gecildi')  gc++;
+        let g=0, k=0, gc=0;
+        Object.values(byNorm).forEach(i => {
+          if      (i.durum==='gezildi')  g++;
+          else if (i.durum==='kismen')   k++;
+          else if (i.durum==='gecildi')  gc++;
         });
         document.getElementById('sayi-gezildi').textContent = g;
         document.getElementById('sayi-kismen').textContent  = k;
         document.getElementById('sayi-gecildi').textContent = gc;
-        const oran = ((g + k * 0.5 + gc * 0.25) / TOPLAM * 100);
-        document.getElementById('progress-yuzde').textContent = oran.toFixed(1) + '%';
+        const oran = ((g + k*0.5 + gc*0.25) / TOPLAM * 100);
+        document.getElementById('progress-yuzde').textContent = oran.toFixed(1)+'%';
         document.getElementById('progress-metin').textContent = `${g} tam · ${k} kısmi · ${gc} geçiş`;
-        document.getElementById('bar-gezildi').style.width = (g  / TOPLAM * 100).toFixed(2) + '%';
-        document.getElementById('bar-kismen').style.width  = (k  / TOPLAM * 100).toFixed(2) + '%';
-        document.getElementById('bar-gecildi').style.width = (gc / TOPLAM * 100).toFixed(2) + '%';
+        document.getElementById('bar-gezildi').style.width = (g /TOPLAM*100).toFixed(2)+'%';
+        document.getElementById('bar-kismen').style.width  = (k /TOPLAM*100).toFixed(2)+'%';
+        document.getElementById('bar-gecildi').style.width = (gc/TOPLAM*100).toFixed(2)+'%';
 
         // SVG yükle
         const svgText = await svgResp.text();
         const wrap = document.getElementById('svg-wrap');
-        wrap.innerHTML = svgText;
+
+        // Geçici div ile parse et
+        const tmp = document.createElement('div');
+        tmp.innerHTML = svgText;
+        const svg = tmp.querySelector('svg');
+
+        // SVG içindeki stili sil (bizim inline stiller geçerli olsun)
+        svg.querySelectorAll('style').forEach(s => s.remove());
+
+        // viewBox oku
+        const vbParts = svg.getAttribute('viewBox').split(' ').map(Number);
+        const origVB  = { x:vbParts[0], y:vbParts[1], w:vbParts[2], h:vbParts[3] };
+        let vb = { ...origVB };
+
+        // Her ilçeye renk ve event ekle
+        const tooltip = document.getElementById('h-tooltip');
+        let panning = false;
+
+        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
+          // İl sınırı için tüm ilçe path'lerini kalın çiz
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            p.style.stroke      = ILCE_SINIR_RENK;
+            p.style.strokeWidth = ILCE_SINIR_INCE + 'px';
+          });
+
+          // IL SINIRI — her şehir için outline path ekle
+          // Tüm ilçe path bbox'larının union'ı yerine daha basit: her sehir grubunu
+          // bir wrapper g ile sar ve ona kalın stroke uygula (clip-path trick)
+          const outline = document.createElementNS('http://www.w3.org/2000/svg','rect');
+          // Sehirin bbox'ını hesapla
+          // Bunun yerine: her ilçenin path'ini kopyala, birleştir, fill yok sadece stroke
+          const outlineG = document.createElementNS('http://www.w3.org/2000/svg','g');
+          outlineG.style.pointerEvents = 'none';
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            const kopyaPath = p.cloneNode(true);
+            kopyaPath.style.fill        = 'none';
+            kopyaPath.style.stroke      = IL_SINIR_RENK;
+            kopyaPath.style.strokeWidth = IL_SINIR_KALIN + 'px';
+            kopyaPath.style.strokeLinejoin = 'round';
+            outlineG.appendChild(kopyaPath);
+          });
+          sehirEl.appendChild(outlineG);
+
+          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
+            const svgId   = ilceEl.id;
+            const titleEl = ilceEl.querySelector('title');
+            const titleAd = titleEl ? titleEl.textContent.trim() : '';
+
+            // Eşleştir
+            let veri = null;
+            if (eslesme[svgId] && byId[eslesme[svgId]])         veri = byId[eslesme[svgId]];
+            else if (byNorm[n(titleAd)])                         veri = byNorm[n(titleAd)];
+            else {
+              const parca = svgId.split('-').slice(1).join('-');
+              if (byNorm[n(parca)])                              veri = byNorm[n(parca)];
+            }
+
+            const durum    = veri ? veri.durum : 'gezilmedi';
+            const gosterAd = veri ? veri.ad : titleAd;
+            const ilAd     = veri ? veri.il : (sehirEl.id || '');
+
+            // Renk uygula
+            ilceEl.querySelectorAll('path').forEach(p => {
+              p.style.fill        = RENK[durum] || RENK.gezilmedi;
+              p.style.stroke      = ILCE_SINIR_RENK;
+              p.style.strokeWidth = ILCE_SINIR_INCE + 'px';
+            });
+
+            if (durum === 'gezildi') ilceEl.style.cursor = 'pointer';
+
+            // Tooltip
+            ilceEl.addEventListener('mouseenter', () => {
+              tooltip.innerHTML = `
+                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${gosterAd}
+                <span class="t-il">${ilAd}</span>
+                ${durum==='gezildi' ? '<span class="t-hint">→ içeriğe git</span>' : ''}`;
+              tooltip.style.display = 'block';
+            });
+            ilceEl.addEventListener('mousemove', e => {
+              tooltip.style.left = (e.clientX+14)+'px';
+              tooltip.style.top  = (e.clientY-10)+'px';
+            });
+            ilceEl.addEventListener('mouseleave', () => { tooltip.style.display='none'; });
+
+            // Tıklama
+            ilceEl.addEventListener('click', () => {
+              if (panning) return;
+              if (durum==='gezildi' && veri) window.location.href = `./ilce.html?id=${veri.id}`;
+            });
+          });
+        });
+
+        // SVG'yi wrap'e ekle
+        wrap.appendChild(svg);
         document.getElementById('harita-yukle').style.display = 'none';
         wrap.style.display = '';
 
-        const svg = wrap.querySelector('svg');
-
-        // SVG içindeki varsayılan stili temizle (bizimkiler geçerli olsun)
-        const svgStyle = svg.querySelector('style');
-        if (svgStyle) svgStyle.remove();
-        let viewBox = { x: 0, y: 0, w: 800, h: 264 };
-        const origW = 800, origH = 264;
-        svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-        svg.style.cursor = 'grab';
-
-        // Zoom butonları
-        const zoomWrap = document.createElement('div');
-        zoomWrap.style.cssText = 'position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:4px;z-index:10;';
-        zoomWrap.innerHTML = `
-          <button id="z-in"  style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);">+</button>
-          <button id="z-out" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);">−</button>
-          <button id="z-reset" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);font-weight:700;">⌂</button>`;
-        wrap.style.position = 'relative';
-        wrap.appendChild(zoomWrap);
-
-        function setView(x, y, w, h) {
-          viewBox = { x, y, w, h };
-          svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+        // ===== PAN & ZOOM =====
+        function applyVB() {
+          svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
         }
 
         function zoom(factor, cx, cy) {
-          cx = cx ?? viewBox.x + viewBox.w / 2;
-          cy = cy ?? viewBox.y + viewBox.h / 2;
-          const nw = Math.max(100, Math.min(origW, viewBox.w * factor));
-          const nh = nw * (origH / origW);
-          const nx = cx - (cx - viewBox.x) * (nw / viewBox.w);
-          const ny = cy - (cy - viewBox.y) * (nh / viewBox.h);
-          setView(nx, ny, nw, nh);
+          cx = cx ?? vb.x + vb.w/2;
+          cy = cy ?? vb.y + vb.h/2;
+          const nw = Math.max(80, Math.min(origVB.w, vb.w * factor));
+          const nh = nw * origVB.h / origVB.w;
+          vb.x = cx - (cx - vb.x) * (nw/vb.w);
+          vb.y = cy - (cy - vb.y) * (nh/vb.h);
+          vb.w = nw; vb.h = nh;
+          applyVB();
         }
 
-        document.getElementById('z-in').onclick    = () => zoom(0.65);
-        document.getElementById('z-out').onclick   = () => zoom(1.5);
-        document.getElementById('z-reset').onclick = () => setView(0, 0, origW, origH);
+        document.getElementById('z-in').onclick    = () => zoom(0.6);
+        document.getElementById('z-out').onclick   = () => zoom(1.6);
+        document.getElementById('z-reset').onclick = () => { vb={...origVB}; applyVB(); };
 
-        // Mouse wheel zoom
+        // Scroll zoom
         svg.addEventListener('wheel', e => {
           e.preventDefault();
-          const rect   = svg.getBoundingClientRect();
-          const cx = viewBox.x + (e.clientX - rect.left) / rect.width  * viewBox.w;
-          const cy = viewBox.y + (e.clientY - rect.top)  / rect.height * viewBox.h;
-          zoom(e.deltaY > 0 ? 1.2 : 0.8, cx, cy);
-        }, { passive: false });
+          const r  = svg.getBoundingClientRect();
+          const cx = vb.x + (e.clientX-r.left)/r.width  * vb.w;
+          const cy = vb.y + (e.clientY-r.top) /r.height * vb.h;
+          zoom(e.deltaY>0 ? 1.2 : 0.8, cx, cy);
+        }, {passive:false});
 
-        // Pan
-        let dragging = false, lastX = 0, lastY = 0;
-        svg.addEventListener('mousedown', e => {
-          dragging = true; lastX = e.clientX; lastY = e.clientY;
-          svg.style.cursor = 'grabbing';
-        });
+        // Mouse pan
+        let mx=0, my=0;
+        svg.addEventListener('mousedown', e => { panning=false; mx=e.clientX; my=e.clientY; svg.style.cursor='grabbing'; });
         window.addEventListener('mousemove', e => {
-          if (!dragging) return;
-          const rect = svg.getBoundingClientRect();
-          const dx = -(e.clientX - lastX) / rect.width  * viewBox.w;
-          const dy = -(e.clientY - lastY) / rect.height * viewBox.h;
-          lastX = e.clientX; lastY = e.clientY;
-          setView(viewBox.x + dx, viewBox.y + dy, viewBox.w, viewBox.h);
+          if (e.buttons!==1 || !wrap.contains(svg)) return;
+          const r  = svg.getBoundingClientRect();
+          const dx = -(e.clientX-mx)/r.width  * vb.w;
+          const dy = -(e.clientY-my)/r.height * vb.h;
+          if (Math.abs(dx)+Math.abs(dy) > 0.5) panning = true;
+          mx=e.clientX; my=e.clientY;
+          vb.x+=dx; vb.y+=dy; applyVB();
         });
-        window.addEventListener('mouseup', () => { dragging = false; svg.style.cursor = 'grab'; });
+        window.addEventListener('mouseup', () => { svg.style.cursor='grab'; setTimeout(()=>panning=false,50); });
 
-        // Touch pan
-        let lastTouch = null;
-        svg.addEventListener('touchstart', e => { if (e.touches.length === 1) lastTouch = e.touches[0]; });
-        svg.addEventListener('touchmove', e => {
-          e.preventDefault();
-          if (e.touches.length === 1 && lastTouch) {
-            const rect = svg.getBoundingClientRect();
-            const dx = -(e.touches[0].clientX - lastTouch.clientX) / rect.width  * viewBox.w;
-            const dy = -(e.touches[0].clientY - lastTouch.clientY) / rect.height * viewBox.h;
-            lastTouch = e.touches[0];
-            setView(viewBox.x + dx, viewBox.y + dy, viewBox.w, viewBox.h);
-          }
-        }, { passive: false });
-
-        // Her ilçeye renk ve event ekle
-        svg.querySelectorAll('g.ilce').forEach(ilceEl => {
-          const svgId   = ilceEl.id; // örn: "adana-aladag"
-          const titleEl = ilceEl.querySelector('title');
-          const titleAd = titleEl ? titleEl.textContent.trim() : '';
-
-          // Firestore eşleştirmesi bul
-          let veri = null;
-          if (eslesme[svgId] && ilcelerById[eslesme[svgId]]) {
-            veri = ilcelerById[eslesme[svgId]];
-          } else {
-            // İlçe adından normalize eşleştir
-            veri = ilcelerByNorm[norm(titleAd)];
-            // id'nin son kısmından da dene (ör: adana-aladag → aladag)
-            if (!veri) {
-              const parcalar = svgId.split('-');
-              const ilceKismi = parcalar.slice(1).join('-');
-              veri = ilcelerByNorm[norm(ilceKismi)];
-            }
-          }
-
-          const durum = veri ? veri.durum : 'gezilmedi';
-          ilceEl.classList.remove('gezildi','kismen','gecildi','gezilmedi');
-          ilceEl.classList.add(durum);
-
-          // İl adı — SVG'de sehir id'sinden al
-          const sehirEl = ilceEl.closest('g.sehir');
-          const ilAd    = sehirEl ? sehirEl.id.replace(/-/g, ' ') : '';
-          const gosterAd = veri ? veri.ad : titleAd;
-
-          // Tooltip
-          const tooltip = document.getElementById('harita-tooltip');
-
-          ilceEl.addEventListener('mouseenter', e => {
-            tooltip.innerHTML = `
-              <span class="tt-durum" style="background:${RENKLER_HEX[durum]};"></span>${gosterAd}
-              <span class="tt-il">${veri ? veri.il || ilAd : ilAd}</span>
-              ${durum === 'gezildi' ? '<span class="tt-link-hint">→ içeriği gör</span>' : ''}
-            `;
-            tooltip.style.display = 'block';
-          });
-
-          ilceEl.addEventListener('mousemove', e => {
-            tooltip.style.left = (e.clientX + 14) + 'px';
-            tooltip.style.top  = (e.clientY - 10) + 'px';
-          });
-
-          ilceEl.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-          });
-
-          // Tıklama — gezildi ise ilçe sayfasına git, diğerleri tooltip'te zaten bilgi var
-          ilceEl.addEventListener('click', (e) => {
-            if (dragging) return; // pan sırasında tıklama sayılmasın
-            if (durum === 'gezildi' && veri) {
-              window.location.href = `./ilce.html?id=${veri.id}`;
-            }
-          });
-        });
-
-      } catch (err) {
+      } catch(err) {
         console.error(err);
-        document.getElementById('harita-yukle').innerHTML = `
-          <div class="empty-state">
-            <div class="owl-icon">🦉</div>
-            <p>Harita yüklenemedi: ${err.message}</p>
-          </div>`;
+        document.getElementById('harita-yukle').innerHTML =
+          `<div class="empty-state"><div class="owl-icon">🦉</div><p>Harita yüklenemedi: ${err.message}</p></div>`;
       }
     }
 
-    function norm(ad) {
-      return (ad || '').toLowerCase()
-        .replace(/\s*\(.*?\)\s*/g, '')
+    function n(ad) {
+      return (ad||'').toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g,'')
         .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s')
         .replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u')
         .trim();
