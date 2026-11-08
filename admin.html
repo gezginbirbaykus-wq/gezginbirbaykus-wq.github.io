@@ -390,7 +390,7 @@
           <div id="admin-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:520px;gap:12px;color:var(--brown-60);">
             <div class="spinner"></div><p>Harita yükleniyor...</p>
           </div>
-          <div id="admin-harita" style="display:none;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;"></div>
+          <div id="admin-harita" style="display:none;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:#FDFAF6;"></div>
 
           <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;">
             <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);">
@@ -1539,7 +1539,10 @@
         }).addTo(harita);
 
         harita.invalidateSize();
-        harita.fitBounds(ilceKatman.getBounds(), { padding: [30, 50] });
+        setTimeout(() => {
+          harita.invalidateSize();
+          harita.fitBounds(ilceKatman.getBounds(), { padding: [30, 50] });
+        }, 300);
 
         // ===== KAYDET =====
         document.getElementById('harita-kaydet-btn').onclick = async () => {
