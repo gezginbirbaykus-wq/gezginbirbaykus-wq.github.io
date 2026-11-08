@@ -1639,3 +1639,168 @@ img { max-width: 100%; display: block; }
 .leaflet-tooltip {
   z-index: 1000 !important;
 }
+
+/* ===== ANA SAYFA TAM HARİTA ===== */
+.anasayfa-harita-wrap {
+  margin-bottom: 52px;
+}
+
+.anasayfa-harita-wrap .section-title {
+  margin-bottom: 20px;
+}
+
+/* İstatistik grid */
+.harita-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.harita-stat {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hs-renk {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(0,0,0,0.08);
+}
+.hs-renk.gezildi   { background: #27ae60; }
+.hs-renk.kismen    { background: #2980b9; }
+.hs-renk.gecildi   { background: #f39c12; }
+.hs-renk.gezilmedi { background: #ecf0f1; border-color: #bdc3c7; }
+
+.hs-sayi   { font-size: 1.3rem; font-weight: 700; color: var(--brown); line-height: 1; margin-bottom: 2px; }
+.hs-etiket { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+/* Progress */
+.harita-progress {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.hp-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.hp-label strong { color: var(--brown); }
+.hp-alt { font-size: 0.75rem; color: var(--text-faint); }
+.hp-bar-bg { height: 8px; background: var(--border-light); border-radius: 8px; overflow: hidden; display: flex; }
+.hp-bar { height: 100%; transition: width 1s ease; }
+.hp-bar.gezildi { background: #27ae60; }
+.hp-bar.kismen  { background: #2980b9; }
+.hp-bar.gecildi { background: #f39c12; }
+
+/* Legend */
+.harita-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.hl-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.hl-dot.gezildi   { background: #27ae60; }
+.hl-dot.kismen    { background: #2980b9; }
+.hl-dot.gecildi   { background: #f39c12; }
+.hl-dot.gezilmedi { background: #f0ece6; }
+
+/* SVG wrap */
+.h-svg-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+  position: relative;
+  user-select: none;
+}
+
+.h-svg-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  cursor: grab;
+}
+.h-svg-wrap svg:active { cursor: grabbing; }
+.h-svg-wrap svg path {
+  fill: #f0ece6;
+  stroke: #c8b8aa;
+  stroke-width: 0.4px;
+  vector-effect: non-scaling-stroke;
+}
+.h-svg-wrap svg g.ilce:hover > path { opacity: 0.75; }
+
+/* Zoom butonları */
+.h-zoom-ctrl {
+  position: absolute;
+  top: 10px; left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+.h-zoom-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--brown);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: background 0.15s;
+}
+.h-zoom-btn:hover { background: var(--brown-10); }
+
+/* Tooltip */
+.h-tooltip {
+  position: fixed;
+  background: rgba(255,255,255,0.97);
+  border: 1px solid #DEB898;
+  border-radius: 10px;
+  padding: 7px 13px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2A1F16;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  white-space: nowrap;
+}
+[data-theme="dark"] .h-tooltip {
+  background: rgba(44,32,24,0.97);
+  color: #F0E6DA;
+  border-color: #4A3020;
+}
+
+@media (max-width: 768px) {
+  .harita-stats-grid { grid-template-columns: repeat(2,1fr); }
+}

@@ -26,7 +26,6 @@
       <div class="header-right">
         <nav class="main-nav">
           <a href="./index.html" class="active">Ana Sayfa</a>
-          <a href="./harita.html">Harita</a>
         </nav>
         <button class="theme-toggle" id="theme-toggle" aria-label="Gece modu"></button>
       </div>
@@ -46,16 +45,51 @@
 
   <!-- MAIN -->
   <main class="main-content" id="kesfet">
-    <!-- MİNİ HARİTA -->
+    <!-- HARİTA -->
     <div class="anasayfa-harita-wrap">
-      <div class="anasayfa-harita-baslik">
-        <h2 class="section-title">Gezi Haritam</h2>
+      <h2 class="section-title">Gezi Haritam</h2>
+
+      <!-- İstatistikler -->
+      <div class="harita-stats-grid">
+        <div class="harita-stat"><div class="hs-renk gezildi"></div><div><div class="hs-sayi" id="sayi-gezildi">—</div><div class="hs-etiket">Gezildi</div></div></div>
+        <div class="harita-stat"><div class="hs-renk kismen"></div><div><div class="hs-sayi" id="sayi-kismen">—</div><div class="hs-etiket">Kısmen</div></div></div>
+        <div class="harita-stat"><div class="hs-renk gecildi"></div><div><div class="hs-sayi" id="sayi-gecildi">—</div><div class="hs-etiket">Yoldan Geçildi</div></div></div>
+        <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi">973</div><div class="hs-etiket">Toplam İlçe</div></div></div>
       </div>
-      <div id="anasayfa-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:420px;gap:12px;color:var(--brown-60);">
+
+      <div class="harita-progress">
+        <div class="hp-label">
+          <span>Türkiye ilçelerini <strong id="progress-yuzde">0%</strong> oranında gezdim</span>
+          <span id="progress-metin" class="hp-alt"></span>
+        </div>
+        <div class="hp-bar-bg">
+          <div class="hp-bar gezildi" id="bar-gezildi" style="width:0%"></div>
+          <div class="hp-bar kismen"  id="bar-kismen"  style="width:0%"></div>
+          <div class="hp-bar gecildi" id="bar-gecildi" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="harita-legend">
+        <span><span class="hl-dot gezildi"></span> Gezildi</span>
+        <span><span class="hl-dot kismen"></span> Kısmen</span>
+        <span><span class="hl-dot gecildi"></span> Yoldan Geçildi</span>
+        <span><span class="hl-dot gezilmedi"></span> Gezilmedi</span>
+      </div>
+
+      <!-- SVG harita -->
+      <div id="h-yukle" style="display:flex;align-items:center;justify-content:center;height:460px;gap:12px;color:var(--brown-60);">
         <div class="spinner"></div><p>Harita yükleniyor...</p>
       </div>
-      <div class="svg-harita-mini-wrap" id="anasayfa-harita" style="display:none;margin-bottom:52px;"></div>
+      <div class="h-svg-wrap" id="h-svg-wrap" style="display:none;">
+        <div class="h-zoom-ctrl">
+          <button class="h-zoom-btn" id="hz-in">+</button>
+          <button class="h-zoom-btn" id="hz-out">−</button>
+          <button class="h-zoom-btn" id="hz-reset" style="font-size:0.7rem;">⌂</button>
+        </div>
+      </div>
     </div>
+
+    <div id="h-tooltip" class="h-tooltip"></div>
 
     <div class="kesfet-header">
       <h2 class="section-title">Keşfet</h2>
@@ -294,8 +328,8 @@
 
     yukle();
 
-    // ===== ANA SAYFA MİNİ HARİTA (SVG) =====
-    async function anasayfaHaritaYukle() {
+    // ===== TAM HARİTA (SVG) =====
+    async function haritaYukle() {
       try {
         const [ilceSnap, ilSnap, eslesmeSnap, svgResp] = await Promise.all([
           getDocs(collection(db, 'ilceler')),
@@ -304,104 +338,157 @@
           fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
-        const illerMapH = {};
-        ilSnap.docs.forEach(d => { illerMapH[d.id] = d.data().ad; });
+        const illerMap = {};
+        ilSnap.docs.forEach(d => { illerMap[d.id] = d.data().ad; });
 
-        const ilcelerH = {}, ilcelerHById = {};
+        const byNorm = {}, byId = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
-          const obj  = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMapH[data.ilId] || '' };
-          ilcelerH[hNorm(data.ad)] = obj;
-          ilcelerHById[d.id] = obj;
+          const obj  = { id:d.id, ad:data.ad, durum:data.durum||'gezilmedi', il:illerMap[data.ilId]||'' };
+          byNorm[hn(data.ad)] = obj;
+          byId[d.id] = obj;
         });
 
-        const eslesmeMap = {};
+        const eslesme = {};
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.svgId  && data.ilceId) eslesmeMap[data.svgId]         = data.ilceId;
-          if (data.topoAd && data.ilceId) eslesmeMap[hNorm(data.topoAd)] = data.ilceId;
+          if (data.svgId  && data.ilceId) eslesme[data.svgId]      = data.ilceId;
+          if (data.topoAd && data.ilceId) eslesme[hn(data.topoAd)] = data.ilceId;
         });
 
-        const RENKLER_HEX = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#bdc3c7' };
+        // İstatistikler
+        let g=0, k=0, gc=0;
+        Object.values(byNorm).forEach(i => {
+          if      (i.durum==='gezildi')  g++;
+          else if (i.durum==='kismen')   k++;
+          else if (i.durum==='gecildi')  gc++;
+        });
+        document.getElementById('sayi-gezildi').textContent = g;
+        document.getElementById('sayi-kismen').textContent  = k;
+        document.getElementById('sayi-gecildi').textContent = gc;
+        const oran = ((g + k*0.5 + gc*0.25) / 973 * 100);
+        document.getElementById('progress-yuzde').textContent = oran.toFixed(1)+'%';
+        document.getElementById('progress-metin').textContent = `${g} tam · ${k} kısmi · ${gc} geçiş`;
+        document.getElementById('bar-gezildi').style.width = (g /973*100).toFixed(2)+'%';
+        document.getElementById('bar-kismen').style.width  = (k /973*100).toFixed(2)+'%';
+        document.getElementById('bar-gecildi').style.width = (gc/973*100).toFixed(2)+'%';
 
-        // SVG'yi DOM'a ekle
-        const svgText = await svgResp.text();
-        const wrap = document.getElementById('anasayfa-harita');
-        wrap.innerHTML = svgText;
-        document.getElementById('anasayfa-harita-yukle').style.display = 'none';
-        wrap.style.display = '';
+        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#c8b8aa' };
+        const IL_KALIN = 1.4, ILCE_INCE = 0.4;
 
-        const svg = wrap.querySelector('svg');
-        // SVG içindeki varsayılan stili temizle
-        const svgStyle = svg.querySelector('style');
-        if (svgStyle) svgStyle.remove();
+        // SVG parse
+        const tmp = document.createElement('div');
+        tmp.innerHTML = await svgResp.text();
+        const svg = tmp.querySelector('svg');
+        svg.querySelectorAll('style').forEach(s => s.remove());
 
-        // Tooltip elementi — index.html'de yoksa oluştur
-        let tooltip = document.getElementById('harita-tooltip');
-        if (!tooltip) {
-          tooltip = document.createElement('div');
-          tooltip.id = 'harita-tooltip';
-          tooltip.style.cssText = 'position:fixed;background:rgba(255,255,255,0.97);border:1px solid #DEB898;border-radius:10px;padding:7px 13px;font-family:Inter,sans-serif;font-size:0.82rem;font-weight:700;color:#2A1F16;box-shadow:0 4px 16px rgba(0,0,0,0.12);pointer-events:none;z-index:9999;display:none;white-space:nowrap;';
-          document.body.appendChild(tooltip);
-        }
+        const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);
+        const origVB = { x:vbP[0], y:vbP[1], w:vbP[2], h:vbP[3] };
+        let vb = { ...origVB };
+        const tooltip = document.getElementById('h-tooltip');
+        let panning = false;
 
-        svg.querySelectorAll('g.ilce').forEach(ilceEl => {
-          const svgId   = ilceEl.id;
-          const titleEl = ilceEl.querySelector('title');
-          const titleAd = titleEl ? titleEl.textContent.trim() : '';
+        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
+          // İl kalın sınır
+          const outG = document.createElementNS('http://www.w3.org/2000/svg','g');
+          outG.style.pointerEvents = 'none';
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            const kp = p.cloneNode(true);
+            kp.style.fill='none'; kp.style.stroke='#7a5540';
+            kp.style.strokeWidth=IL_KALIN+'px'; kp.style.strokeLinejoin='round';
+            outG.appendChild(kp);
+          });
+          sehirEl.appendChild(outG);
 
-          // Eşleştir
-          let veri = null;
-          if (eslesmeMap[svgId] && ilcelerHById[eslesmeMap[svgId]]) {
-            veri = ilcelerHById[eslesmeMap[svgId]];
-          } else {
-            veri = ilcelerH[hNorm(titleAd)];
-            if (!veri) {
-              const parca = svgId.split('-').slice(1).join('-');
-              veri = ilcelerH[hNorm(parca)];
+          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
+            const svgId   = ilceEl.id;
+            const titleAd = ilceEl.querySelector('title')?.textContent.trim() || '';
+
+            let veri = null;
+            if (eslesme[svgId] && byId[eslesme[svgId]])    veri = byId[eslesme[svgId]];
+            else if (byNorm[hn(titleAd)])                   veri = byNorm[hn(titleAd)];
+            else {
+              const p = svgId.split('-').slice(1).join('-');
+              if (byNorm[hn(p)])                            veri = byNorm[hn(p)];
             }
-          }
 
-          const durum    = veri ? veri.durum : 'gezilmedi';
-          const gosterAd = veri ? veri.ad : titleAd;
-          const ilAd     = veri ? veri.il : '';
+            const durum    = veri ? veri.durum : 'gezilmedi';
+            const gosterAd = veri ? veri.ad : titleAd;
+            const ilAd     = veri ? veri.il : '';
 
-          ilceEl.classList.add(durum);
+            ilceEl.querySelectorAll('path').forEach(p => {
+              p.style.fill        = RENK[durum];
+              p.style.stroke      = '#c8b8aa';
+              p.style.strokeWidth = ILCE_INCE+'px';
+            });
 
-          // Hover tooltip
-          ilceEl.addEventListener('mouseenter', () => {
-            tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENKLER_HEX[durum]};margin-right:6px;vertical-align:middle;"></span>${gosterAd}<span style="display:block;font-size:0.72rem;color:#9B6240;font-weight:400;">${ilAd}</span>${durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;font-weight:500;">→ içeriğe git</span>':''}`;
-            tooltip.style.display = 'block';
+            if (durum==='gezildi') ilceEl.style.cursor='pointer';
+
+            ilceEl.addEventListener('mouseenter', () => {
+              tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${gosterAd}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${ilAd}</span>${durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
+              tooltip.style.display='block';
+            });
+            ilceEl.addEventListener('mousemove', e => {
+              tooltip.style.left=(e.clientX+14)+'px';
+              tooltip.style.top=(e.clientY-10)+'px';
+            });
+            ilceEl.addEventListener('mouseleave', () => { tooltip.style.display='none'; });
+            ilceEl.addEventListener('click', () => {
+              if (panning) return;
+              if (durum==='gezildi' && veri) window.location.href=`./ilce.html?id=${veri.id}`;
+            });
           });
-          ilceEl.addEventListener('mousemove', e => {
-            tooltip.style.left = (e.clientX + 14) + 'px';
-            tooltip.style.top  = (e.clientY - 10) + 'px';
-          });
-          ilceEl.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-
-          // Tıklama
-          if (durum === 'gezildi' && veri) {
-            ilceEl.style.cursor = 'pointer';
-            ilceEl.addEventListener('click', () => { window.location.href = `./ilce.html?id=${veri.id}`; });
-          }
         });
 
-      } catch (err) {
-        console.error('Mini harita:', err);
-        document.getElementById('anasayfa-harita-yukle').innerHTML =
+        const wrap = document.getElementById('h-svg-wrap');
+        wrap.appendChild(svg);
+        document.getElementById('h-yukle').style.display='none';
+        wrap.style.display='';
+
+        // Pan & Zoom
+        function applyVB() { svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+        function zoom(f,cx,cy) {
+          cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
+          const nw=Math.max(80,Math.min(origVB.w,vb.w*f));
+          const nh=nw*origVB.h/origVB.w;
+          vb.x=cx-(cx-vb.x)*(nw/vb.w); vb.y=cy-(cy-vb.y)*(nh/vb.h);
+          vb.w=nw; vb.h=nh; applyVB();
+        }
+        document.getElementById('hz-in').onclick    = ()=>zoom(0.6);
+        document.getElementById('hz-out').onclick   = ()=>zoom(1.6);
+        document.getElementById('hz-reset').onclick = ()=>{vb={...origVB};applyVB();};
+        svg.addEventListener('wheel',e=>{
+          e.preventDefault();
+          const r=svg.getBoundingClientRect();
+          zoom(e.deltaY>0?1.2:0.8, vb.x+(e.clientX-r.left)/r.width*vb.w, vb.y+(e.clientY-r.top)/r.height*vb.h);
+        },{passive:false});
+        let mx=0,my=0;
+        svg.addEventListener('mousedown',e=>{panning=false;mx=e.clientX;my=e.clientY;svg.style.cursor='grabbing';});
+        window.addEventListener('mousemove',e=>{
+          if(e.buttons!==1||!wrap.contains(svg))return;
+          const r=svg.getBoundingClientRect();
+          const dx=-(e.clientX-mx)/r.width*vb.w, dy=-(e.clientY-my)/r.height*vb.h;
+          if(Math.abs(dx)+Math.abs(dy)>0.5)panning=true;
+          mx=e.clientX;my=e.clientY;vb.x+=dx;vb.y+=dy;applyVB();
+        });
+        window.addEventListener('mouseup',()=>{svg.style.cursor='grab';setTimeout(()=>panning=false,50);});
+
+      } catch(err) {
+        console.error(err);
+        document.getElementById('h-yukle').innerHTML=
           `<div style="text-align:center;padding:40px;color:var(--text-faint);">🦉 Harita yüklenemedi</div>`;
       }
     }
 
-    function hNorm(ad) {
-      return (ad || '').toLowerCase()
-        .replace(/\s*\(.*?\)\s*/g, '')
+    function hn(ad) {
+      return (ad||'').toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g,'')
         .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s')
         .replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u')
         .trim();
     }
 
-    anasayfaHaritaYukle();
+    haritaYukle();
   </script>
 
 </body>
