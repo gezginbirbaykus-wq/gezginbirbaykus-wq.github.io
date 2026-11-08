@@ -335,7 +335,7 @@
           getDocs(collection(db, 'ilceler')),
           getDocs(collection(db, 'iller')),
           getDocs(collection(db, 'haritaEslesme')),
-          fetch('./assets/turkiye-bos.svg'),
+          fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
         const illerMap = {};
@@ -388,29 +388,55 @@
         const tooltip = document.getElementById('h-tooltip');
         let panning = false;
 
-        // Yeni SVG: path ID tabanlı eşleştirme
-        svg.querySelectorAll('path').forEach(pathEl => {
-          const svgId = pathEl.id || '';
-          if (!svgId || svgId.startsWith('clip') || svgId.startsWith('rect') || svgId.startsWith('metadata')) return;
+        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
+          const outG = document.createElementNS('http://www.w3.org/2000/svg','g');
+          outG.style.pointerEvents = 'none';
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            const kp = p.cloneNode(true);
+            kp.style.fill='none'; kp.style.stroke='#7a5540';
+            kp.style.strokeWidth=IL_KALIN+'px'; kp.style.strokeLinejoin='round';
+            outG.appendChild(kp);
+          });
+          sehirEl.appendChild(outG);
 
-          const ilceId   = eslesme[svgId];
-          const veri     = ilceId ? byId[ilceId] : null;
-          const durum    = veri ? veri.durum : 'gezilmedi';
-          const gosterAd = veri ? veri.ad : '';
-          const ilAd     = veri ? veri.il : '';
+          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
+            const svgId   = ilceEl.id;
+            const titleAd = ilceEl.querySelector('title')?.textContent.trim() || '';
 
-          pathEl.style.fill = RENK[durum];
-          if (durum==='gezildi') pathEl.style.cursor='pointer';
+            let veri = null;
+            if (eslesme[svgId] && byId[eslesme[svgId]])    veri = byId[eslesme[svgId]];
+            else if (byNorm[hn(titleAd)])                   veri = byNorm[hn(titleAd)];
+            else {
+              const p = svgId.split('-').slice(1).join('-');
+              if (byNorm[hn(p)])                            veri = byNorm[hn(p)];
+            }
 
-          if (veri) {
-            pathEl.addEventListener('mouseenter', () => {
+            const durum    = veri ? veri.durum : 'gezilmedi';
+            const gosterAd = veri ? veri.ad : titleAd;
+            const ilAd     = veri ? veri.il : '';
+
+            ilceEl.querySelectorAll('path').forEach(p => {
+              p.style.fill        = RENK[durum];
+              p.style.stroke      = '#c8b8aa';
+              p.style.strokeWidth = ILCE_INCE+'px';
+            });
+
+            if (durum==='gezildi') ilceEl.style.cursor='pointer';
+
+            ilceEl.addEventListener('mouseenter', () => {
               tooltip.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+RENK[durum]+';margin-right:6px;vertical-align:middle;"></span>'+gosterAd+'<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">'+ilAd+'</span>'+(durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':'');
               tooltip.style.display='block';
             });
-            pathEl.addEventListener('mousemove', e => { tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY-10)+'px'; });
-            pathEl.addEventListener('mouseleave', () => { tooltip.style.display='none'; });
-            pathEl.addEventListener('click', () => { if (!panning && durum==='gezildi') window.location.href='./ilce.html?id='+veri.id; });
-          }
+            ilceEl.addEventListener('mousemove', e => {
+              tooltip.style.left=(e.clientX+14)+'px';
+              tooltip.style.top=(e.clientY-10)+'px';
+            });
+            ilceEl.addEventListener('mouseleave', () => { tooltip.style.display='none'; });
+            ilceEl.addEventListener('click', () => {
+              if (panning) return;
+              if (durum==='gezildi' && veri) window.location.href='./ilce.html?id='+veri.id;
+            });
+          });
         });
         const wrap = document.getElementById('h-svg-wrap');
         wrap.appendChild(svg);
@@ -472,4 +498,5 @@
 
 </body>
 </html>
+
 

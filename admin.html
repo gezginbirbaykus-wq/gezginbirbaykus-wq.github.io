@@ -1394,7 +1394,7 @@
           getDocs(collection(db, 'ilceler')),
           getDocs(collection(db, 'iller')),
           getDocs(collection(db, 'haritaEslesme')),
-          fetch('./assets/turkiye-bos.svg'),
+          fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
         const illerMapH = {};
@@ -1446,47 +1446,69 @@
         adminTooltip.style.cssText = 'position:fixed;background:rgba(255,255,255,0.97);border:1px solid #DEB898;border-radius:10px;padding:7px 13px;font-family:Inter,sans-serif;font-size:0.82rem;font-weight:700;color:#2A1F16;box-shadow:0 4px 16px rgba(0,0,0,0.12);pointer-events:none;z-index:9999;display:none;white-space:nowrap;';
         document.body.appendChild(adminTooltip);
 
-        // Yeni SVG: path ID tabanlı eşleştirme
-        svg.querySelectorAll('path').forEach(pathEl => {
-          const svgId = pathEl.id || '';
-          if (!svgId || svgId.startsWith('clip') || svgId.startsWith('rect') || svgId.startsWith('metadata')) return;
-
-          const ilceId   = eslesmeMap[svgId];
-          const veri     = ilceId ? ilcelerHById[ilceId] : null;
-          const durum    = veri ? veri.durum : 'gezilmedi';
-          const gosterAd = veri ? veri.ad : '(eşleştirilmedi)';
-          const ilAd     = veri ? veri.il : '';
-
-          pathEl.style.fill = RENK[durum];
-          pathEl.style.cursor = 'pointer';
-
-          pathEl.addEventListener('mouseenter', () => {
-            adminTooltip.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+RENK[durum]+';margin-right:6px;vertical-align:middle;"></span>'+gosterAd+(ilAd?'<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">'+ilAd+'</span>':'');
-            adminTooltip.style.display='block';
+        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
+          const outG = document.createElementNS('http://www.w3.org/2000/svg','g');
+          outG.style.pointerEvents = 'none';
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            const kp = p.cloneNode(true);
+            kp.style.fill='none'; kp.style.stroke='#7a5540';
+            kp.style.strokeWidth='1.4px'; kp.style.strokeLinejoin='round';
+            outG.appendChild(kp);
           });
-          pathEl.addEventListener('mousemove', e => { adminTooltip.style.left=(e.clientX+14)+'px'; adminTooltip.style.top=(e.clientY-10)+'px'; });
-          pathEl.addEventListener('mouseleave', () => { adminTooltip.style.display='none'; });
+          sehirEl.appendChild(outG);
 
-          pathEl.addEventListener('click', () => {
-            if (adminPanning) return;
-            // Önceki seçimi temizle
-            svg.querySelectorAll('path.admin-secili').forEach(el => {
-              el.classList.remove('admin-secili');
-              el.style.strokeWidth = '';
-              el.style.stroke = '';
+          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
+            const svgId   = ilceEl.id;
+            const titleAd = ilceEl.querySelector('title')?.textContent.trim() || '';
+
+            let veri = null;
+            if (eslesmeMap[svgId] && ilcelerHById[eslesmeMap[svgId]])  veri = ilcelerHById[eslesmeMap[svgId]];
+            else if (ilcelerH[aN(titleAd)])                             veri = ilcelerH[aN(titleAd)];
+            else {
+              const p = svgId.split('-').slice(1).join('-');
+              if (ilcelerH[aN(p)])                                      veri = ilcelerH[aN(p)];
+            }
+
+            const durum    = veri ? veri.durum : 'gezilmedi';
+            const gosterAd = veri ? veri.ad : titleAd;
+            const ilAd     = veri ? veri.il : '';
+
+            ilceEl.querySelectorAll('path').forEach(p => {
+              p.style.fill = RENK[durum];
+              p.style.stroke = '#c8b8aa';
+              p.style.strokeWidth = '0.4px';
             });
-            pathEl.classList.add('admin-secili');
-            pathEl.style.stroke = '#9B6240';
-            pathEl.style.strokeWidth = '2px';
 
-            seciliSvgId = svgId;
-            seciliIlceId = veri ? veri.id : null;
+            ilceEl.style.cursor = 'pointer';
 
-            document.getElementById('harita-secim-topo-ad').textContent = veri ? veri.ad : svgId;
-            document.getElementById('harita-secim-panel').style.display = '';
-            document.getElementById('harita-kaydet-alert').innerHTML = '';
-            document.getElementById('harita-eslesme-select').value = seciliIlceId || '';
-            document.getElementById('harita-durum-select').value = durum;
+            ilceEl.addEventListener('mouseenter', () => {
+              adminTooltip.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+RENK[durum]+';margin-right:6px;vertical-align:middle;"></span>'+gosterAd+'<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">'+ilAd+'</span>';
+              adminTooltip.style.display = 'block';
+            });
+            ilceEl.addEventListener('mousemove', e => {
+              adminTooltip.style.left = (e.clientX+14)+'px';
+              adminTooltip.style.top  = (e.clientY-10)+'px';
+            });
+            ilceEl.addEventListener('mouseleave', () => { adminTooltip.style.display='none'; });
+
+            ilceEl.addEventListener('click', () => {
+              if (adminPanning) return;
+              svg.querySelectorAll('g.ilce.admin-secili').forEach(el => {
+                el.classList.remove('admin-secili');
+                el.querySelectorAll('path').forEach(p => {p.style.stroke='#c8b8aa';p.style.strokeWidth='0.4px';});
+              });
+              ilceEl.classList.add('admin-secili');
+              ilceEl.querySelectorAll('path').forEach(p => { p.style.stroke='#9B6240'; p.style.strokeWidth='1.5px'; });
+
+              seciliSvgId  = svgId;
+              seciliIlceId = veri ? veri.id : null;
+
+              document.getElementById('harita-secim-topo-ad').textContent = gosterAd || svgId;
+              document.getElementById('harita-secim-panel').style.display = '';
+              document.getElementById('harita-kaydet-alert').innerHTML = '';
+              document.getElementById('harita-eslesme-select').value = seciliIlceId || '';
+              document.getElementById('harita-durum-select').value   = durum;
+            });
           });
         });
         const wrap = document.getElementById('admin-harita');
@@ -1617,4 +1639,5 @@
 
 </body>
 </html>
+
 
