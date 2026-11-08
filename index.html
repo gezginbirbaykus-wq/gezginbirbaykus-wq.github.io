@@ -54,7 +54,7 @@
         <div class="harita-stat"><div class="hs-renk gezildi"></div><div><div class="hs-sayi" id="sayi-gezildi">—</div><div class="hs-etiket">Gezildi</div></div></div>
         <div class="harita-stat"><div class="hs-renk kismen"></div><div><div class="hs-sayi" id="sayi-kismen">—</div><div class="hs-etiket">Kısmen</div></div></div>
         <div class="harita-stat"><div class="hs-renk gecildi"></div><div><div class="hs-sayi" id="sayi-gecildi">—</div><div class="hs-etiket">Yoldan Geçildi</div></div></div>
-        <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi">990</div><div class="hs-etiket">Toplam İlçe</div></div></div>
+        <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi">973</div><div class="hs-etiket">Toplam İlçe</div></div></div>
       </div>
 
       <div class="harita-progress">
@@ -366,12 +366,12 @@
         document.getElementById('sayi-gezildi').textContent = g;
         document.getElementById('sayi-kismen').textContent  = k;
         document.getElementById('sayi-gecildi').textContent = gc;
-        const oran = ((g + k*0.5 + gc*0.25) / 990 * 100);
+        const oran = ((g + k*0.5 + gc*0.25) / 973 * 100);
         document.getElementById('progress-yuzde').textContent = oran.toFixed(1)+'%';
         document.getElementById('progress-metin').textContent = `${g} tam · ${k} kısmi · ${gc} geçiş`;
-        document.getElementById('bar-gezildi').style.width = (g /990*100).toFixed(2)+'%';
-        document.getElementById('bar-kismen').style.width  = (k /990*100).toFixed(2)+'%';
-        document.getElementById('bar-gecildi').style.width = (gc/990*100).toFixed(2)+'%';
+        document.getElementById('bar-gezildi').style.width = (g /973*100).toFixed(2)+'%';
+        document.getElementById('bar-kismen').style.width  = (k /973*100).toFixed(2)+'%';
+        document.getElementById('bar-gecildi').style.width = (gc/973*100).toFixed(2)+'%';
 
         const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#c8b8aa' };
         const IL_KALIN = 1.4, ILCE_INCE = 0.4;
