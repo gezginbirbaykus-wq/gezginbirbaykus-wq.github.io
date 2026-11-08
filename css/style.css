@@ -1509,3 +1509,65 @@ img { max-width: 100%; display: block; }
 .durum-sec-btn input[type="radio"]:checked + .durum-kismen   { background: #d0e8f8; color: #1a5c8a; border-color: #2980b9; }
 .durum-sec-btn input[type="radio"]:checked + .durum-gecildi  { background: #fef3d0; color: #8a5a00; border-color: #f39c12; }
 .durum-sec-btn input[type="radio"]:checked + .durum-gezilmedi{ background: var(--border-light); color: var(--text-muted); border-color: var(--border); }
+
+/* ===== ANA SAYFA MİNİ HARİTA ===== */
+.anasayfa-harita-wrap {
+  margin-bottom: 0;
+}
+
+.anasayfa-harita-baslik {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.anasayfa-harita-baslik .section-title {
+  margin-bottom: 0;
+}
+
+.anasayfa-harita-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brown);
+  background: var(--brown-10);
+  border: 1px solid var(--brown-20);
+  padding: 6px 14px;
+  border-radius: 20px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.anasayfa-harita-link:hover {
+  background: var(--brown-20);
+  border-color: var(--brown-40);
+}
+
+/* Leaflet harita cursor */
+.leaflet-interactive.gezildi-cursor {
+  cursor: pointer !important;
+}
+
+/* Tooltip stili (index'te de kullanılıyor) */
+.ilce-tooltip {
+  background: rgba(255,255,255,0.96);
+  border: 1px solid #DEB898;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #2A1F16;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .ilce-tooltip {
+  background: rgba(44,32,24,0.97);
+  color: #F0E6DA;
+  border-color: #4A3020;
+}
+
+.leaflet-control-attribution { display: none !important; }

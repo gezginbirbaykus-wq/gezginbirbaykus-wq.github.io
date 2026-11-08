@@ -360,8 +360,8 @@
         document.getElementById('bar-kismen').style.width  = (k  / TOPLAM * 100).toFixed(2) + '%';
         document.getElementById('bar-gecildi').style.width = (gc / TOPLAM * 100).toFixed(2) + '%';
 
-        // TopoJSON yükle
-        const resp    = await fetch('https://gist.githubusercontent.com/ozanyusufoglu/9417ab1c17feee67414df52c8250f8bd/raw/turkey_simple.topojson');
+        // TopoJSON yükle — local dosyadan
+        const resp    = await fetch('./assets/turkey.topojson');
         const topo    = await resp.json();
         const geojson = topojson.feature(topo, topo.objects.admin_level_6);
 

@@ -12,6 +12,7 @@
   <meta name="twitter:card" content="summary" />
   <meta name="google-site-verification" content="m69ymHHjHIX-W_HeFWjD5h2g_j0WRiqdt2JHLeJe8NM" />
   <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>" />
 </head>
 <body>
@@ -46,6 +47,18 @@
 
   <!-- MAIN -->
   <main class="main-content" id="kesfet">
+    <!-- MİNİ HARİTA -->
+    <div class="anasayfa-harita-wrap">
+      <div class="anasayfa-harita-baslik">
+        <h2 class="section-title">Gezi Haritam</h2>
+        <a href="./harita.html" class="anasayfa-harita-link">Tam Ekran →</a>
+      </div>
+      <div id="anasayfa-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:320px;gap:12px;color:var(--brown-60);">
+        <div class="spinner"></div><p>Harita yükleniyor...</p>
+      </div>
+      <div id="anasayfa-harita" style="display:none;height:320px;border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:48px;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
+    </div>
+
     <div class="kesfet-header">
       <h2 class="section-title">Keşfet</h2>
       <div class="arama-wrap">
@@ -77,6 +90,8 @@
     <p class="footer-copy">© 2026 — Tüm hakları saklıdır.</p>
   </footer>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
   <script type="module">
     import { db } from './js/firebase-config.js';
     import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -282,6 +297,122 @@
     }
 
     yukle();
+
+    // ===== ANA SAYFA MİNİ HARİTA =====
+    async function anasayfaHaritaYukle() {
+      try {
+        const [ilceSnap, ilSnap, eslesmeSnap] = await Promise.all([
+          getDocs(collection(db, 'ilceler')),
+          getDocs(collection(db, 'iller')),
+          getDocs(collection(db, 'haritaEslesme')),
+        ]);
+
+        const illerMapH = {};
+        ilSnap.docs.forEach(d => { illerMapH[d.id] = d.data().ad; });
+
+        const ilcelerH = {}, ilcelerHById = {};
+        ilceSnap.docs.forEach(d => {
+          const data = d.data();
+          const norm = hNorm(data.ad);
+          const obj  = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMapH[data.ilId] || '' };
+          ilcelerH[norm] = obj;
+          ilcelerHById[d.id] = obj;
+        });
+
+        const eslesmeMap = {};
+        eslesmeSnap.docs.forEach(d => {
+          const data = d.data();
+          if (data.topoAd && data.ilceId) eslesmeMap[data.topoAd] = data.ilceId;
+        });
+
+        const RENKLER_H = {
+          gezildi:   { dolgu: '#27ae60', op: 0.82, kenar: '#1e8449', kw: 0.7 },
+          kismen:    { dolgu: '#2980b9', op: 0.72, kenar: '#1f618d', kw: 0.7 },
+          gecildi:   { dolgu: '#f39c12', op: 0.72, kenar: '#d68910', kw: 0.7 },
+          gezilmedi: { dolgu: '#f5f0eb', op: 0.55, kenar: '#c4b5a8', kw: 0.4 },
+        };
+
+        const resp    = await fetch('./assets/turkey.topojson');
+        const topo    = await resp.json();
+        const geojson = topojson.feature(topo, topo.objects.admin_level_6);
+
+        document.getElementById('anasayfa-harita-yukle').style.display = 'none';
+        const haritaEl = document.getElementById('anasayfa-harita');
+        haritaEl.style.display = '';
+
+        const harita = L.map('anasayfa-harita', {
+          zoomControl: false,
+          scrollWheelZoom: false,
+          doubleClickZoom: false,
+          dragging: false,
+          touchZoom: false,
+          attributionControl: false,
+        });
+
+        haritaEl.style.background = '#FDFAF6';
+
+        function bul(topoAd) {
+          const norm = hNorm(topoAd);
+          if (eslesmeMap[norm] && ilcelerHById[eslesmeMap[norm]]) return ilcelerHById[eslesmeMap[norm]];
+          if (ilcelerH[norm]) return ilcelerH[norm];
+          return null;
+        }
+
+        const katman = L.geoJSON(geojson, {
+          style: feature => {
+            const v = bul(feature.properties.name || '');
+            const d = v ? v.durum : 'gezilmedi';
+            const r = RENKLER_H[d];
+            return { fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: r.kw, opacity: 1 };
+          },
+          onEachFeature: (feature, layer) => {
+            const v      = bul(feature.properties.name || '');
+            const durum  = v ? v.durum : 'gezilmedi';
+            const ad     = v ? v.ad : feature.properties.name || '';
+            const il     = v ? v.il : '';
+            const renkHex = RENKLER_H[durum]?.dolgu || '#bdc3c7';
+
+            layer.bindTooltip(`
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${renkHex};margin-right:5px;vertical-align:middle;"></span>${ad}
+              ${il ? `<span style="display:block;font-size:0.7rem;color:#9B6240;margin-top:1px;">${il}</span>` : ''}
+            `, { sticky: true, className: 'ilce-tooltip', direction: 'top', offset: [0, -4] });
+
+            layer.on({
+              mouseover(e) { e.target.setStyle({ weight: 2, fillOpacity: 0.95, color: '#5C4A3A' }); e.target.bringToFront(); },
+              mouseout(e)  { katman.resetStyle(e.target); },
+              click() {
+                if (durum === 'gezildi' && v) window.location.href = `./ilce.html?id=${v.id}`;
+              }
+            });
+
+            // Gezildi ise cursor pointer
+            if (durum === 'gezildi') {
+              layer.getElement && layer.on('add', () => {
+                const el = layer.getElement();
+                if (el) el.style.cursor = 'pointer';
+              });
+            }
+          }
+        }).addTo(harita);
+
+        harita.fitBounds(katman.getBounds(), { padding: [6, 6] });
+
+      } catch (err) {
+        console.error('Mini harita:', err);
+        document.getElementById('anasayfa-harita-yukle').innerHTML =
+          `<div style="text-align:center;padding:40px;color:var(--text-faint);">🦉 Harita yüklenemedi</div>`;
+      }
+    }
+
+    function hNorm(ad) {
+      return (ad || '').toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g, '')
+        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ş/g, 's')
+        .replace(/ç/g, 'c').replace(/ö/g, 'o').replace(/ü/g, 'u')
+        .trim();
+    }
+
+    anasayfaHaritaYukle();
   </script>
 
 </body>
