@@ -12,6 +12,7 @@
   <meta name="twitter:card" content="summary" />
   <meta name="google-site-verification" content="m69ymHHjHIX-W_HeFWjD5h2g_j0WRiqdt2JHLeJe8NM" />
   <link rel="stylesheet" href="./css/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>" />
 </head>
 <body>
@@ -80,13 +81,7 @@
       <div id="h-yukle" style="display:flex;align-items:center;justify-content:center;height:460px;gap:12px;color:var(--brown-60);">
         <div class="spinner"></div><p>Harita yükleniyor...</p>
       </div>
-      <div class="h-svg-wrap" id="h-svg-wrap" style="display:none;">
-        <div class="h-zoom-ctrl">
-          <button class="h-zoom-btn" id="hz-in">+</button>
-          <button class="h-zoom-btn" id="hz-out">−</button>
-          <button class="h-zoom-btn" id="hz-reset" style="font-size:0.7rem;">⌂</button>
-        </div>
-      </div>
+      <div id="h-leaflet" style="display:none;height:460px;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
     </div>
 
     <div id="h-tooltip" class="h-tooltip"></div>
@@ -122,6 +117,7 @@
     <p class="footer-copy">© 2026 — Tüm hakları saklıdır.</p>
   </footer>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { db } from './js/firebase-config.js';
     import { collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -328,32 +324,33 @@
 
     yukle();
 
-    // ===== TAM HARİTA (SVG) =====
+    // ===== HARİTA (Leaflet + GeoJSON) =====
     async function haritaYukle() {
       try {
-        const [ilceSnap, ilSnap, eslesmeSnap, svgResp] = await Promise.all([
+        const [ilceSnap, ilSnap, eslesmeSnap, ilceGeo, ilGeo] = await Promise.all([
           getDocs(collection(db, 'ilceler')),
           getDocs(collection(db, 'iller')),
           getDocs(collection(db, 'haritaEslesme')),
-          fetch('./assets/turkiye-ilceler.svg'),
+          fetch('./assets/ilce.geojson').then(r=>r.json()),
+          fetch('./assets/il.geojson').then(r=>r.json()),
         ]);
 
         const illerMap = {};
         ilSnap.docs.forEach(d => { illerMap[d.id] = d.data().ad; });
 
-        const byNorm = {}, byId = {};
+        const byId = {}, byNorm = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
           const obj  = { id:d.id, ad:data.ad, durum:data.durum||'gezilmedi', il:illerMap[data.ilId]||'' };
-          byNorm[hn(data.ad)] = obj;
           byId[d.id] = obj;
+          byNorm[hn(data.ad)] = obj;
         });
 
-        const eslesme = {};
+        // haritaEslesme: featureIndex -> ilceId
+        const eslesme = {}; // featureIndex (string) -> ilceId
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          if (data.svgId  && data.ilceId) eslesme[data.svgId]      = data.ilceId;
-          if (data.topoAd && data.ilceId) eslesme[hn(data.topoAd)] = data.ilceId;
+          if (data.svgId && data.ilceId) eslesme[data.svgId] = data.ilceId;
         });
 
         // İstatistikler
@@ -373,121 +370,89 @@
         document.getElementById('bar-kismen').style.width  = (k /973*100).toFixed(2)+'%';
         document.getElementById('bar-gecildi').style.width = (gc/973*100).toFixed(2)+'%';
 
-        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
-        const IL_KALIN = 1.4, ILCE_INCE = 0.4;
+        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#f5f0eb' };
 
-        // SVG parse
-        const svgText = await svgResp.text();
-        const tmp = document.createElement('div');
-        tmp.innerHTML = svgText;
-        const svg = tmp.querySelector('svg');
-        if (!svg) throw new Error('SVG parse edilemedi');
-        svg.querySelectorAll('style').forEach(s => s.remove());
+        document.getElementById('h-yukle').style.display = 'none';
+        const haritaEl = document.getElementById('h-leaflet');
+        haritaEl.style.display = '';
+        haritaEl.style.background = '#FDFAF6';
 
-        const vbStr  = svg.getAttribute('viewBox') || svg.getAttribute('viewbox') || '0 0 800 264';
-        const vbP    = vbStr.trim().split(/[\s,]+/).map(Number);
-        const origVB = { x:vbP[0]||0, y:vbP[1]||0, w:vbP[2]||800, h:vbP[3]||264 };
-        let vb = { ...origVB };
+        const harita = L.map('h-leaflet', {
+          zoomControl: true,
+          scrollWheelZoom: false,
+          attributionControl: false,
+          zoomSnap: 0.5,
+        });
+
         const tooltip = document.getElementById('h-tooltip');
-        let panning = false;
 
-        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
-          const outG = document.createElementNS('http://www.w3.org/2000/svg','g');
-          outG.style.pointerEvents = 'none';
-          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
-            const kp = p.cloneNode(true);
-            kp.style.fill='none'; kp.style.stroke='#7a5540';
-            kp.style.strokeWidth=IL_KALIN+'px'; kp.style.strokeLinejoin='round';
-            outG.appendChild(kp);
-          });
-          sehirEl.appendChild(outG);
+        // İlçe katmanı
+        const ilceKatman = L.geoJSON(ilceGeo, {
+          style: (feature) => {
+            const idx   = String(feature.properties._index ?? ilceGeo.features.indexOf(feature));
+            const ilceId = eslesme[idx];
+            const veri   = ilceId ? byId[ilceId] : null;
+            const durum  = veri ? veri.durum : 'gezilmedi';
+            return {
+              fillColor:   RENK[durum],
+              fillOpacity: durum==='gezilmedi' ? 0.6 : 0.8,
+              color:       '#b8a898',
+              weight:      0.5,
+              opacity:     1,
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            const idx    = String(ilceGeo.features.indexOf(feature));
+            const ilceId = eslesme[idx];
+            const veri   = ilceId ? byId[ilceId] : null;
+            const durum  = veri ? veri.durum : 'gezilmedi';
+            const ad     = veri ? veri.ad : '';
+            const il     = veri ? veri.il : '';
 
-          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
-            const svgId   = ilceEl.id;
-            const titleAd = ilceEl.querySelector('title')?.textContent.trim() || '';
-
-            let veri = null;
-            if (eslesme[svgId] && byId[eslesme[svgId]])    veri = byId[eslesme[svgId]];
-            else if (byNorm[hn(titleAd)])                   veri = byNorm[hn(titleAd)];
-            else {
-              const p = svgId.split('-').slice(1).join('-');
-              if (byNorm[hn(p)])                            veri = byNorm[hn(p)];
-            }
-
-            const durum    = veri ? veri.durum : 'gezilmedi';
-            const gosterAd = veri ? veri.ad : titleAd;
-            const ilAd     = veri ? veri.il : '';
-
-            ilceEl.querySelectorAll('path').forEach(p => {
-              p.style.fill        = RENK[durum];
-              p.style.stroke      = '#c8b8aa';
-              p.style.strokeWidth = ILCE_INCE+'px';
+            layer.on({
+              mouseover(e) {
+                e.target.setStyle({ weight: 1.5, fillOpacity: 0.95, color: '#7a5540' });
+                e.target.bringToFront();
+                if (ad) {
+                  tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.2);"></span>${ad}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>${durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
+                  tooltip.style.display = 'block';
+                }
+              },
+              mouseout(e) {
+                ilceKatman.resetStyle(e.target);
+                tooltip.style.display = 'none';
+              },
+              mousemove(e) {
+                tooltip.style.left = (e.originalEvent.clientX+14)+'px';
+                tooltip.style.top  = (e.originalEvent.clientY-10)+'px';
+              },
+              click() {
+                if (durum==='gezildi' && veri) window.location.href = `./ilce.html?id=${veri.id}`;
+              }
             });
+          }
+        }).addTo(harita);
 
-            if (durum==='gezildi') ilceEl.style.cursor='pointer';
+        // İl sınırları katmanı (kalın çizgi, fill yok)
+        L.geoJSON(ilGeo, {
+          style: () => ({
+            fillColor: 'transparent',
+            fillOpacity: 0,
+            color: '#6b4423',
+            weight: 1.5,
+            opacity: 0.9,
+          }),
+          interactive: false,
+        }).addTo(harita);
 
-            ilceEl.addEventListener('mouseenter', () => {
-              tooltip.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+RENK[durum]+';margin-right:6px;vertical-align:middle;"></span>'+gosterAd+'<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">'+ilAd+'</span>'+(durum==='gezildi'?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':'');
-              tooltip.style.display='block';
-            });
-            ilceEl.addEventListener('mousemove', e => {
-              tooltip.style.left=(e.clientX+14)+'px';
-              tooltip.style.top=(e.clientY-10)+'px';
-            });
-            ilceEl.addEventListener('mouseleave', () => { tooltip.style.display='none'; });
-            ilceEl.addEventListener('click', () => {
-              if (panning) return;
-              if (durum==='gezildi' && veri) window.location.href='./ilce.html?id='+veri.id;
-            });
-          });
-        });
-        const wrap = document.getElementById('h-svg-wrap');
-        wrap.appendChild(svg);
-        svg.setAttribute('width','100%');
-        svg.removeAttribute('height');
-        svg.style.cssText=`width:100%;height:auto;display:block;cursor:grab;aspect-ratio:${origVB.w}/${origVB.h};`;
-        document.getElementById('h-yukle').style.display='none';
-        wrap.style.display='';
-
-        // Pan & Zoom
-        function clamp() {
-          const pad = vb.w * 0.15;
-          vb.x = Math.max(origVB.x - pad, Math.min(origVB.x + origVB.w - vb.w + pad, vb.x));
-          vb.y = Math.max(origVB.y - pad, Math.min(origVB.y + origVB.h - vb.h + pad, vb.y));
-        }
-        function applyVB() { clamp(); svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
-        function zoom(f,cx,cy) {
-          cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
-          const nw=Math.max(80,Math.min(origVB.w,vb.w*f));
-          const nh=nw*origVB.h/origVB.w;
-          vb.x=cx-(cx-vb.x)*(nw/vb.w); vb.y=cy-(cy-vb.y)*(nh/vb.h);
-          vb.w=nw; vb.h=nh; applyVB();
-        }
-        document.getElementById('hz-out').onclick   = ()=>zoom(1.6);
-        document.getElementById('hz-reset').onclick = ()=>{vb={...origVB};applyVB();};
-        svg.addEventListener('wheel',e=>{
-          e.preventDefault();
-          const r=svg.getBoundingClientRect();
-          zoom(e.deltaY>0?1.2:0.8, vb.x+(e.clientX-r.left)/r.width*vb.w, vb.y+(e.clientY-r.top)/r.height*vb.h);
-        },{passive:false});
-        let mx=0,my=0;
-        svg.addEventListener('mousedown',e=>{panning=false;mx=e.clientX;my=e.clientY;svg.style.cursor='grabbing';});
-        window.addEventListener('mousemove',e=>{
-          if(e.buttons!==1||!wrap.contains(svg))return;
-          const r=svg.getBoundingClientRect();
-          const dx=-(e.clientX-mx)/r.width*vb.w, dy=-(e.clientY-my)/r.height*vb.h;
-          if(Math.abs(dx)+Math.abs(dy)>0.5)panning=true;
-          mx=e.clientX;my=e.clientY;vb.x+=dx;vb.y+=dy;applyVB();
-        });
-        window.addEventListener('mouseup',()=>{svg.style.cursor='grab';setTimeout(()=>panning=false,50);});
+        harita.fitBounds(ilceKatman.getBounds(), { padding: [8, 8] });
 
       } catch(err) {
         console.error(err);
-        document.getElementById('h-yukle').innerHTML=
-          `<div style="text-align:center;padding:40px;color:var(--text-faint);">🦉 Harita yüklenemedi</div>`;
+        document.getElementById('h-yukle').innerHTML =
+          `<div style="text-align:center;padding:40px;color:var(--text-faint);">🦉 Harita yüklenemedi: ${err.message}</div>`;
       }
     }
-
     function hn(ad) {
       return (ad||'').toLowerCase()
         .replace(/\s*\(.*?\)\s*/g,'')
@@ -501,5 +466,6 @@
 
 </body>
 </html>
+
 
 
