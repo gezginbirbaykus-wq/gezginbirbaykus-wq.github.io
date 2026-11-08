@@ -6,7 +6,6 @@
   <title>Admin — Gezginbirbaykus</title>
   <link rel="stylesheet" href="./css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -438,8 +437,6 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
   <script type="module">
     import { db, auth } from './js/firebase-config.js';
     import {
@@ -1380,83 +1377,58 @@
     }
 
     // ===== HARİTA SEKMESİ =====
-    let adminHarita = null;
-    let adminKatman = null;
-    let adminTopoData = null;
-    let seciliLayer = null;
-    let seciliTopoAd = '';
-
-    const ADMIN_RENKLER = {
-      gezildi:   { dolgu: '#27ae60', op: 0.80, kenar: '#1e8449' },
-      kismen:    { dolgu: '#2980b9', op: 0.70, kenar: '#1f618d' },
-      gecildi:   { dolgu: '#f39c12', op: 0.70, kenar: '#d68910' },
-      gezilmedi: { dolgu: '#f5f0eb', op: 0.55, kenar: '#b8a898' },
-    };
-
-    // Harita sekmesine ilk geçişte yükle
     let adminHaritaYuklendi = false;
 
     document.querySelectorAll('.admin-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.dataset.tab === 'harita' && !adminHaritaYuklendi) {
           adminHaritaYuklendi = true;
-          setTimeout(adminHaritaYukle, 100); // DOM render için kısa bekle
+          setTimeout(adminHaritaYukle, 100);
         }
       });
     });
 
     async function adminHaritaYukle() {
       try {
-        // Firestore ilçelerini zaten `ilceler` değişkeninde var, ama harita için yeniden çek
-        const [ilceSnap, ilSnap] = await Promise.all([
+        const [ilceSnap, ilSnap, eslesmeSnap, svgResp] = await Promise.all([
           getDocs(collection(db, 'ilceler')),
           getDocs(collection(db, 'iller')),
+          getDocs(collection(db, 'haritaEslesme')),
+          fetch('./assets/turkiye-ilceler.svg'),
         ]);
 
         const illerMapH = {};
         ilSnap.docs.forEach(d => { illerMapH[d.id] = d.data().ad; });
 
-        const ilcelerH = {};
-        const ilcelerHById = {};
+        const ilcelerH = {}, ilcelerHById = {};
         ilceSnap.docs.forEach(d => {
           const data = d.data();
-          const norm = adminNormalize(data.ad);
           const obj = { id: d.id, ad: data.ad, durum: data.durum || 'gezilmedi', il: illerMapH[data.ilId] || '' };
-          ilcelerH[norm] = obj;
+          ilcelerH[aN(data.ad)] = obj;
           ilcelerHById[d.id] = obj;
         });
 
-        // Harita eşleştirme verisi — Firestore id → topo ilçe adı (manuel bağlantı)
-        // Bu veri Firestore'daki `haritaEslesme` koleksiyonundan gelecek
-        const eslesmeSnap = await getDocs(collection(db, 'haritaEslesme'));
-        const eslesmeMap = {}; // topoAd (normalized) → firestoreId
-        const eslesmeTers = {}; // firestoreId → topoAd (normalized)
+        const eslesmeMap = {}; // svgId → ilceId
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
-          eslesmeMap[data.topoAd] = data.ilceId;
-          eslesmeTers[data.ilceId] = data.topoAd;
+          if (data.svgId  && data.ilceId) eslesmeMap[data.svgId]      = data.ilceId;
+          if (data.topoAd && data.ilceId) eslesmeMap[aN(data.topoAd)] = data.ilceId;
         });
 
-        // TopoJSON yükle
-        if (!adminTopoData) {
-          const resp = await fetch('./assets/turkey.topojson');
-          adminTopoData = await resp.json();
-        }
-        const geojson = topojson.feature(adminTopoData, adminTopoData.objects.admin_level_6);
+        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
 
-        // Haritayı göster
-        document.getElementById('admin-harita-yukle').style.display = 'none';
-        const haritaEl = document.getElementById('admin-harita');
-        haritaEl.style.display = '';
+        // SVG parse
+        const tmp = document.createElement('div');
+        tmp.innerHTML = await svgResp.text();
+        const svg = tmp.querySelector('svg');
+        svg.querySelectorAll('style').forEach(s => s.remove());
 
-        adminHarita = L.map('admin-harita', {
-          zoomControl: true,
-          scrollWheelZoom: true,
-          attributionControl: false,
-          zoomSnap: 0.5,
-        });
-
-        haritaEl.style.background = '#FDFAF6';
+        const vbP    = svg.getAttribute('viewBox').split(' ').map(Number);
+        const origVB = { x:vbP[0], y:vbP[1], w:vbP[2], h:vbP[3] };
+        let vb = { ...origVB };
+        let seciliIlceId = null;
+        let seciliSvgId  = null;
+        let adminPanning = false;
 
         // İlçe seçim select'ini doldur
         const eslesmeSelect = document.getElementById('harita-eslesme-select');
@@ -1469,155 +1441,201 @@
             return `<option value="${i.id}">${i.ad}${ilAd ? ' — ' + ilAd : ''}</option>`;
           }).join('');
 
-        // Haritada bir ilçe için durum belirle
-        function ilceDurumBul(topoAd) {
-          const normTopo = adminNormalize(topoAd);
-          // Önce manuel eşleştirme tablosuna bak
-          const eslesId = eslesmeMap[normTopo];
-          if (eslesId && ilcelerHById[eslesId]) return ilcelerHById[eslesId].durum;
-          // Otomatik normalize eşleştir
-          if (ilcelerH[normTopo]) return ilcelerH[normTopo].durum;
-          return 'gezilmedi';
-        }
+        // Her ilçeye renk ve tıklama ekle
+        const adminTooltip = document.createElement('div');
+        adminTooltip.style.cssText = 'position:fixed;background:rgba(255,255,255,0.97);border:1px solid #DEB898;border-radius:10px;padding:7px 13px;font-family:Inter,sans-serif;font-size:0.82rem;font-weight:700;color:#2A1F16;box-shadow:0 4px 16px rgba(0,0,0,0.12);pointer-events:none;z-index:9999;display:none;white-space:nowrap;';
+        document.body.appendChild(adminTooltip);
 
-        function ilceIdBul(topoAd) {
-          const normTopo = adminNormalize(topoAd);
-          const eslesId = eslesmeMap[normTopo];
-          if (eslesId) return eslesId;
-          if (ilcelerH[normTopo]) return ilcelerH[normTopo].id;
-          return null;
-        }
+        svg.querySelectorAll('g.sehir').forEach(sehirEl => {
+          const outG = document.createElementNS('http://www.w3.org/2000/svg','g');
+          outG.style.pointerEvents = 'none';
+          sehirEl.querySelectorAll('g.ilce > path').forEach(p => {
+            const kp = p.cloneNode(true);
+            kp.style.fill='none'; kp.style.stroke='#7a5540';
+            kp.style.strokeWidth='1.4px'; kp.style.strokeLinejoin='round';
+            outG.appendChild(kp);
+          });
+          sehirEl.appendChild(outG);
 
-        adminKatman = L.geoJSON(geojson, {
-          style: feature => {
-            const durum = ilceDurumBul(feature.properties.name || '');
-            const r = ADMIN_RENKLER[durum] || ADMIN_RENKLER.gezilmedi;
-            return { fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: 0.7, opacity: 1 };
-          },
-          onEachFeature: (feature, layer) => {
-            const topoAd = feature.properties.name || '';
+          sehirEl.querySelectorAll('g.ilce').forEach(ilceEl => {
+            const svgId   = ilceEl.id;
+            const titleAd = ilceEl.querySelector('title')?.textContent.trim() || '';
 
-            layer.bindTooltip(topoAd, {
-              sticky: true,
-              className: 'ilce-tooltip',
-              direction: 'top',
-              offset: [0, -4],
+            let veri = null;
+            if (eslesmeMap[svgId] && ilcelerHById[eslesmeMap[svgId]])  veri = ilcelerHById[eslesmeMap[svgId]];
+            else if (ilcelerH[aN(titleAd)])                             veri = ilcelerH[aN(titleAd)];
+            else {
+              const p = svgId.split('-').slice(1).join('-');
+              if (ilcelerH[aN(p)])                                      veri = ilcelerH[aN(p)];
+            }
+
+            const durum    = veri ? veri.durum : 'gezilmedi';
+            const gosterAd = veri ? veri.ad : titleAd;
+            const ilAd     = veri ? veri.il : '';
+
+            ilceEl.querySelectorAll('path').forEach(p => {
+              p.style.fill = RENK[durum];
+              p.style.stroke = '#c8b8aa';
+              p.style.strokeWidth = '0.4px';
             });
 
-            layer.on({
-              mouseover(e) {
-                if (layer !== seciliLayer) {
-                  e.target.setStyle({ weight: 2, fillOpacity: 0.95, color: '#9B6240' });
-                  e.target.bringToFront();
-                }
-              },
-              mouseout(e) {
-                if (layer !== seciliLayer) adminKatman.resetStyle(e.target);
-              },
-              click() {
-                // Önceki seçili layer'ı sıfırla
-                if (seciliLayer && seciliLayer !== layer) {
-                  adminKatman.resetStyle(seciliLayer);
-                }
-                seciliLayer = layer;
-                seciliTopoAd = topoAd;
+            ilceEl.style.cursor = 'pointer';
 
-                // Seçili layer'ı vurgula
-                layer.setStyle({ weight: 3, color: '#9B6240', fillOpacity: 0.95 });
-                layer.bringToFront();
-
-                // Panel'i göster
-                document.getElementById('harita-secim-topo-ad').textContent = topoAd;
-                document.getElementById('harita-secim-panel').style.display = '';
-                document.getElementById('harita-kaydet-alert').innerHTML = '';
-
-                // Mevcut durum ve eşleştirmeyi set et
-                const mevcutId = ilceIdBul(topoAd);
-                if (mevcutId) {
-                  document.getElementById('harita-eslesme-select').value = mevcutId;
-                  const mevcutDurum = ilcelerHById[mevcutId]?.durum || 'gezilmedi';
-                  document.getElementById('harita-durum-select').value = mevcutDurum;
-                } else {
-                  document.getElementById('harita-eslesme-select').value = '';
-                  document.getElementById('harita-durum-select').value = 'gezilmedi';
-                }
-              }
+            // Tooltip
+            ilceEl.addEventListener('mouseenter', () => {
+              adminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${RENK[durum]};margin-right:6px;vertical-align:middle;"></span>${gosterAd}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${ilAd}</span>`;
+              adminTooltip.style.display = 'block';
             });
-          }
-        }).addTo(adminHarita);
+            ilceEl.addEventListener('mousemove', e => {
+              adminTooltip.style.left = (e.clientX+14)+'px';
+              adminTooltip.style.top  = (e.clientY-10)+'px';
+            });
+            ilceEl.addEventListener('mouseleave', () => { adminTooltip.style.display='none'; });
 
-        adminHarita.fitBounds(adminKatman.getBounds(), { padding: [10, 10] });
+            ilceEl.addEventListener('click', () => {
+              if (adminPanning) return;
 
-        // ===== KAYDET BUTONU =====
+              // Seçim vurgusunu temizle
+              svg.querySelectorAll('g.ilce.admin-secili').forEach(el => {
+                el.classList.remove('admin-secili');
+                const d2 = el._adminDurum || 'gezilmedi';
+                el.querySelectorAll('path').forEach(p => { p.style.stroke='#c8b8aa'; p.style.strokeWidth='0.4px'; });
+              });
+
+              // Seç
+              ilceEl.classList.add('admin-secili');
+              ilceEl._adminDurum = durum;
+              ilceEl.querySelectorAll('path').forEach(p => { p.style.stroke='#9B6240'; p.style.strokeWidth='1.5px'; });
+
+              seciliSvgId  = svgId;
+              seciliIlceId = veri ? veri.id : null;
+
+              // Paneli göster
+              document.getElementById('harita-secim-topo-ad').textContent = gosterAd;
+              document.getElementById('harita-secim-panel').style.display = '';
+              document.getElementById('harita-kaydet-alert').innerHTML = '';
+              document.getElementById('harita-eslesme-select').value = seciliIlceId || '';
+              document.getElementById('harita-durum-select').value   = durum;
+            });
+          });
+        });
+
+        const wrap = document.getElementById('admin-harita');
+        wrap.innerHTML = '';
+        wrap.style.position = 'relative';
+        wrap.style.background = '#FDFAF6';
+        wrap.style.borderRadius = '14px';
+        wrap.style.overflow = 'hidden';
+
+        // Zoom butonları
+        const zoomDiv = document.createElement('div');
+        zoomDiv.style.cssText = 'position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:4px;z-index:10;';
+        zoomDiv.innerHTML = `
+          <button id="az-in"    style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.1rem;font-weight:700;cursor:pointer;">+</button>
+          <button id="az-out"   style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.1rem;font-weight:700;cursor:pointer;">−</button>
+          <button id="az-reset" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:0.7rem;font-weight:700;cursor:pointer;">⌂</button>`;
+
+        wrap.appendChild(zoomDiv);
+        wrap.appendChild(svg);
+
+        document.getElementById('admin-harita-yukle').style.display = 'none';
+        wrap.style.display = '';
+
+        svg.style.width = '100%';
+        svg.style.height = 'auto';
+        svg.style.display = 'block';
+        svg.style.cursor = 'grab';
+
+        // Pan & Zoom
+        function applyVB() { svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+        function zoom(f,cx,cy) {
+          cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
+          const nw=Math.max(80,Math.min(origVB.w,vb.w*f));
+          const nh=nw*origVB.h/origVB.w;
+          vb.x=cx-(cx-vb.x)*(nw/vb.w); vb.y=cy-(cy-vb.y)*(nh/vb.h);
+          vb.w=nw; vb.h=nh; applyVB();
+        }
+        document.getElementById('az-in').onclick    = ()=>zoom(0.6);
+        document.getElementById('az-out').onclick   = ()=>zoom(1.6);
+        document.getElementById('az-reset').onclick = ()=>{vb={...origVB};applyVB();};
+        svg.addEventListener('wheel',e=>{
+          e.preventDefault();
+          const r=svg.getBoundingClientRect();
+          zoom(e.deltaY>0?1.2:0.8, vb.x+(e.clientX-r.left)/r.width*vb.w, vb.y+(e.clientY-r.top)/r.height*vb.h);
+        },{passive:false});
+        let mx=0,my=0;
+        svg.addEventListener('mousedown',e=>{adminPanning=false;mx=e.clientX;my=e.clientY;svg.style.cursor='grabbing';});
+        window.addEventListener('mousemove',e=>{
+          if(e.buttons!==1||!wrap.contains(svg))return;
+          const r=svg.getBoundingClientRect();
+          const dx=-(e.clientX-mx)/r.width*vb.w, dy=-(e.clientY-my)/r.height*vb.h;
+          if(Math.abs(dx)+Math.abs(dy)>0.5)adminPanning=true;
+          mx=e.clientX;my=e.clientY;vb.x+=dx;vb.y+=dy;applyVB();
+        });
+        window.addEventListener('mouseup',()=>{svg.style.cursor='grab';setTimeout(()=>adminPanning=false,50);});
+
+        // ===== KAYDET =====
         document.getElementById('harita-kaydet-btn').onclick = async () => {
-          const ilceId  = document.getElementById('harita-eslesme-select').value;
-          const durum   = document.getElementById('harita-durum-select').value;
+          const ilceId = document.getElementById('harita-eslesme-select').value;
+          const durum  = document.getElementById('harita-durum-select').value;
           const alertEl = document.getElementById('harita-kaydet-alert');
-
-          if (!ilceId) {
-            alertEl.innerHTML = '<div class="alert alert-error">Lütfen bir Firestore ilçesi seç.</div>';
-            return;
-          }
-
-          const kaydetBtn = document.getElementById('harita-kaydet-btn');
-          kaydetBtn.disabled = true; kaydetBtn.textContent = 'Kaydediliyor...';
-
+          if (!ilceId) { alertEl.innerHTML='<div class="alert alert-error">Lütfen bir ilçe seç.</div>'; return; }
+          const btn = document.getElementById('harita-kaydet-btn');
+          btn.disabled=true; btn.textContent='Kaydediliyor...';
           try {
-            const normTopo = adminNormalize(seciliTopoAd);
+            // 1) Firestore ilçesi güncelle
+            await updateDoc(doc(db,'ilceler',ilceId),{durum});
 
-            // 1) İlçenin durum alanını güncelle
-            await updateDoc(doc(db, 'ilceler', ilceId), { durum });
-
-            // 2) Eşleştirmeyi haritaEslesme koleksiyonuna kaydet
-            // Aynı topoAd için varsa güncelle, yoksa ekle
-            const mevcutDoc = eslesmeSnap.docs.find(d => d.data().topoAd === normTopo);
+            // 2) Eşleştirme kaydet
+            const normSvgId = aN(seciliSvgId || '');
+            const mevcutDoc = eslesmeSnap.docs.find(d=>d.data().svgId===seciliSvgId||d.data().topoAd===normSvgId);
             if (mevcutDoc) {
-              await updateDoc(doc(db, 'haritaEslesme', mevcutDoc.id), { topoAd: normTopo, ilceId });
+              await updateDoc(doc(db,'haritaEslesme',mevcutDoc.id),{svgId:seciliSvgId,ilceId});
             } else {
-              await addDoc(collection(db, 'haritaEslesme'), { topoAd: normTopo, ilceId });
+              await addDoc(collection(db,'haritaEslesme'),{svgId:seciliSvgId,ilceId});
             }
 
-            // 3) Haritada rengi güncelle
-            if (seciliLayer) {
-              const r = ADMIN_RENKLER[durum] || ADMIN_RENKLER.gezilmedi;
-              seciliLayer.setStyle({ fillColor: r.dolgu, fillOpacity: r.op, color: r.kenar, weight: 0.7 });
-              seciliLayer = null;
+            // 3) Haritada rengi anında güncelle
+            const secilenEl = svg.querySelector(`g.ilce#${CSS.escape(seciliSvgId||'')}`);
+            if (secilenEl) {
+              secilenEl.querySelectorAll(':scope > path').forEach(p=>{
+                p.style.fill = RENK[durum]||RENK.gezilmedi;
+              });
+              secilenEl._adminDurum = durum;
             }
-
-            // 4) Local map'i güncelle
-            eslesmeMap[normTopo] = ilceId;
+            // Local map güncelle
+            eslesmeMap[seciliSvgId] = ilceId;
             if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
 
-            alertEl.innerHTML = '<div class="alert alert-success">✅ Kaydedildi!</div>';
-            document.getElementById('harita-eslesme-select').value = '';
-            document.getElementById('harita-secim-panel').style.display = 'none';
-
-          } catch (err) {
-            alertEl.innerHTML = `<div class="alert alert-error">Hata: ${err.message}</div>`;
+            alertEl.innerHTML='<div class="alert alert-success">✅ Kaydedildi!</div>';
+            document.getElementById('harita-secim-panel').style.display='none';
+          } catch(err) {
+            alertEl.innerHTML=`<div class="alert alert-error">Hata: ${err.message}</div>`;
           } finally {
-            kaydetBtn.disabled = false; kaydetBtn.textContent = 'Kaydet';
+            btn.disabled=false; btn.textContent='Kaydet';
           }
         };
 
-        // İptal butonu
         document.getElementById('harita-iptal-btn').onclick = () => {
-          if (seciliLayer) { adminKatman.resetStyle(seciliLayer); seciliLayer = null; }
-          document.getElementById('harita-secim-panel').style.display = 'none';
+          document.getElementById('harita-secim-panel').style.display='none';
+          svg.querySelectorAll('g.ilce.admin-secili').forEach(el=>{
+            el.classList.remove('admin-secili');
+            el.querySelectorAll('path').forEach(p=>{p.style.stroke='#c8b8aa';p.style.strokeWidth='0.4px';});
+          });
         };
 
-      } catch (err) {
+      } catch(err) {
         console.error(err);
-        document.getElementById('admin-harita-yukle').innerHTML =
+        document.getElementById('admin-harita-yukle').innerHTML=
           `<div class="empty-state"><p>Harita yüklenemedi: ${err.message}</p></div>`;
       }
     }
 
-    function adminNormalize(ad) {
-      return (ad || '')
-        .toLowerCase()
-        .replace(/\s*\(.*?\)\s*/g, '')
-        .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ş/g, 's')
-        .replace(/ç/g, 'c').replace(/ö/g, 'o').replace(/ü/g, 'u')
+    function aN(ad) {
+      return (ad||'').toLowerCase()
+        .replace(/\s*\(.*?\)\s*/g,'')
+        .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s')
+        .replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u')
         .trim();
     }
 

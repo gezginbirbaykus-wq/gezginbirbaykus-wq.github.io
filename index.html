@@ -373,7 +373,7 @@
         document.getElementById('bar-kismen').style.width  = (k /973*100).toFixed(2)+'%';
         document.getElementById('bar-gecildi').style.width = (gc/973*100).toFixed(2)+'%';
 
-        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#f39c12', gezilmedi:'#c8b8aa' };
+        const RENK = { gezildi:'#27ae60', kismen:'#2980b9', gecildi:'#e6b800', gezilmedi:'#c8b8aa' };
         const IL_KALIN = 1.4, ILCE_INCE = 0.4;
 
         // SVG parse
@@ -446,7 +446,12 @@
         wrap.style.display='';
 
         // Pan & Zoom
-        function applyVB() { svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
+        function clamp() {
+          const pad = vb.w * 0.15;
+          vb.x = Math.max(origVB.x - pad, Math.min(origVB.x + origVB.w - vb.w + pad, vb.x));
+          vb.y = Math.max(origVB.y - pad, Math.min(origVB.y + origVB.h - vb.h + pad, vb.y));
+        }
+        function applyVB() { clamp(); svg.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`); }
         function zoom(f,cx,cy) {
           cx=cx??vb.x+vb.w/2; cy=cy??vb.y+vb.h/2;
           const nw=Math.max(80,Math.min(origVB.w,vb.w*f));
@@ -454,7 +459,6 @@
           vb.x=cx-(cx-vb.x)*(nw/vb.w); vb.y=cy-(cy-vb.y)*(nh/vb.h);
           vb.w=nw; vb.h=nh; applyVB();
         }
-        document.getElementById('hz-in').onclick    = ()=>zoom(0.6);
         document.getElementById('hz-out').onclick   = ()=>zoom(1.6);
         document.getElementById('hz-reset').onclick = ()=>{vb={...origVB};applyVB();};
         svg.addEventListener('wheel',e=>{

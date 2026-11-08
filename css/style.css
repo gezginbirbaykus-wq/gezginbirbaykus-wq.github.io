@@ -1675,7 +1675,7 @@ img { max-width: 100%; display: block; }
 }
 .hs-renk.gezildi   { background: #27ae60; }
 .hs-renk.kismen    { background: #2980b9; }
-.hs-renk.gecildi   { background: #f39c12; }
+.hs-renk.gecildi   { background: #e6b800; }
 .hs-renk.gezilmedi { background: #ecf0f1; border-color: #bdc3c7; }
 
 .hs-sayi   { font-size: 1.3rem; font-weight: 700; color: var(--brown); line-height: 1; margin-bottom: 2px; }
@@ -1704,7 +1704,7 @@ img { max-width: 100%; display: block; }
 .hp-bar { height: 100%; transition: width 1s ease; }
 .hp-bar.gezildi { background: #27ae60; }
 .hp-bar.kismen  { background: #2980b9; }
-.hp-bar.gecildi { background: #f39c12; }
+.hp-bar.gecildi { background: #e6b800; }
 
 /* Legend */
 .harita-legend {
@@ -1725,7 +1725,7 @@ img { max-width: 100%; display: block; }
 }
 .hl-dot.gezildi   { background: #27ae60; }
 .hl-dot.kismen    { background: #2980b9; }
-.hl-dot.gecildi   { background: #f39c12; }
+.hl-dot.gecildi   { background: #e6b800; }
 .hl-dot.gezilmedi { background: #f0ece6; }
 
 /* SVG wrap */
