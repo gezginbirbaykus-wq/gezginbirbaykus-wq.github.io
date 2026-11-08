@@ -59,49 +59,71 @@
     .legend-renk.gecildi   { background:#f39c12; }
     .legend-renk.gezilmedi { background:#f5f0eb; }
 
-    /* SVG HARİTA */
-    .harita-kapsayici {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 32px 60px;
-    }
-
-    .svg-harita-wrap {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      position: relative;
-    }
-
-    .svg-harita-wrap svg {
+    /* SVG HARİTA — sehir ve ilce stilleri */
+    .svg-harita-wrap svg,
+    .svg-harita-mini-wrap svg {
       width: 100%;
       height: auto;
       display: block;
     }
 
+    /* Tüm path'ler için default */
+    .svg-harita-wrap svg path,
+    .svg-harita-mini-wrap svg path {
+      fill: #f0ece6;
+      stroke: #d4c4b8;
+      stroke-width: 0.3px;
+      transition: fill 0.12s, opacity 0.12s;
+    }
+
+    /* İl sınırları — kalın */
+    .svg-harita-wrap svg .sehir > path,
+    .svg-harita-mini-wrap svg .sehir > path {
+      stroke: #8a6a50 !important;
+      stroke-width: 1.2px !important;
+    }
+
     /* İlçe renkleri */
-    .svg-harita-wrap svg .ilce > path {
+    .svg-harita-wrap svg .ilce > path,
+    .svg-harita-mini-wrap svg .ilce > path {
       fill: #f0ece6;
       stroke: #c4b5a8;
-      stroke-width: 0.3;
-      transition: fill 0.15s, opacity 0.15s;
+      stroke-width: 0.35px;
       cursor: default;
     }
 
-    .svg-harita-wrap svg .sehir {
-      stroke: #9B6240;
-      stroke-width: 0.8;
+    .svg-harita-wrap svg .ilce.gezildi > path,
+    .svg-harita-mini-wrap svg .ilce.gezildi > path {
+      fill: #27ae60 !important;
+      stroke: #1e8449 !important;
+      stroke-width: 0.5px;
+      cursor: pointer;
     }
 
-    .svg-harita-wrap svg .ilce.gezildi > path   { fill: #27ae60; stroke: #1e8449; stroke-width: 0.4; cursor: pointer; }
-    .svg-harita-wrap svg .ilce.kismen > path    { fill: #2980b9; stroke: #1f618d; stroke-width: 0.4; }
-    .svg-harita-wrap svg .ilce.gecildi > path   { fill: #f39c12; stroke: #d68910; stroke-width: 0.4; }
-    .svg-harita-wrap svg .ilce.gezilmedi > path { fill: #f0ece6; stroke: #c4b5a8; stroke-width: 0.3; }
+    .svg-harita-wrap svg .ilce.kismen > path,
+    .svg-harita-mini-wrap svg .ilce.kismen > path {
+      fill: #2980b9 !important;
+      stroke: #1f618d !important;
+      stroke-width: 0.5px;
+    }
 
-    .svg-harita-wrap svg .ilce:hover > path { opacity: 0.75; }
-    .svg-harita-wrap svg .ilce.gezildi:hover > path { opacity: 0.8; }
+    .svg-harita-wrap svg .ilce.gecildi > path,
+    .svg-harita-mini-wrap svg .ilce.gecildi > path {
+      fill: #f39c12 !important;
+      stroke: #d68910 !important;
+      stroke-width: 0.5px;
+    }
+
+    .svg-harita-wrap svg .ilce.gezilmedi > path,
+    .svg-harita-mini-wrap svg .ilce.gezilmedi > path {
+      fill: #f0ece6 !important;
+      stroke: #c4b5a8 !important;
+    }
+
+    .svg-harita-wrap svg .ilce:hover > path,
+    .svg-harita-mini-wrap svg .ilce:hover > path {
+      opacity: 0.7;
+    }
 
     /* Tooltip */
     #harita-tooltip {
@@ -308,6 +330,82 @@
 
         const svg = wrap.querySelector('svg');
 
+        // SVG içindeki varsayılan stili temizle (bizimkiler geçerli olsun)
+        const svgStyle = svg.querySelector('style');
+        if (svgStyle) svgStyle.remove();
+        let viewBox = { x: 0, y: 0, w: 800, h: 264 };
+        const origW = 800, origH = 264;
+        svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+        svg.style.cursor = 'grab';
+
+        // Zoom butonları
+        const zoomWrap = document.createElement('div');
+        zoomWrap.style.cssText = 'position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:4px;z-index:10;';
+        zoomWrap.innerHTML = `
+          <button id="z-in"  style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);">+</button>
+          <button id="z-out" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);">−</button>
+          <button id="z-reset" style="width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--brown);font-size:0.65rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.1);font-weight:700;">⌂</button>`;
+        wrap.style.position = 'relative';
+        wrap.appendChild(zoomWrap);
+
+        function setView(x, y, w, h) {
+          viewBox = { x, y, w, h };
+          svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+        }
+
+        function zoom(factor, cx, cy) {
+          cx = cx ?? viewBox.x + viewBox.w / 2;
+          cy = cy ?? viewBox.y + viewBox.h / 2;
+          const nw = Math.max(100, Math.min(origW, viewBox.w * factor));
+          const nh = nw * (origH / origW);
+          const nx = cx - (cx - viewBox.x) * (nw / viewBox.w);
+          const ny = cy - (cy - viewBox.y) * (nh / viewBox.h);
+          setView(nx, ny, nw, nh);
+        }
+
+        document.getElementById('z-in').onclick    = () => zoom(0.65);
+        document.getElementById('z-out').onclick   = () => zoom(1.5);
+        document.getElementById('z-reset').onclick = () => setView(0, 0, origW, origH);
+
+        // Mouse wheel zoom
+        svg.addEventListener('wheel', e => {
+          e.preventDefault();
+          const rect   = svg.getBoundingClientRect();
+          const cx = viewBox.x + (e.clientX - rect.left) / rect.width  * viewBox.w;
+          const cy = viewBox.y + (e.clientY - rect.top)  / rect.height * viewBox.h;
+          zoom(e.deltaY > 0 ? 1.2 : 0.8, cx, cy);
+        }, { passive: false });
+
+        // Pan
+        let dragging = false, lastX = 0, lastY = 0;
+        svg.addEventListener('mousedown', e => {
+          dragging = true; lastX = e.clientX; lastY = e.clientY;
+          svg.style.cursor = 'grabbing';
+        });
+        window.addEventListener('mousemove', e => {
+          if (!dragging) return;
+          const rect = svg.getBoundingClientRect();
+          const dx = -(e.clientX - lastX) / rect.width  * viewBox.w;
+          const dy = -(e.clientY - lastY) / rect.height * viewBox.h;
+          lastX = e.clientX; lastY = e.clientY;
+          setView(viewBox.x + dx, viewBox.y + dy, viewBox.w, viewBox.h);
+        });
+        window.addEventListener('mouseup', () => { dragging = false; svg.style.cursor = 'grab'; });
+
+        // Touch pan
+        let lastTouch = null;
+        svg.addEventListener('touchstart', e => { if (e.touches.length === 1) lastTouch = e.touches[0]; });
+        svg.addEventListener('touchmove', e => {
+          e.preventDefault();
+          if (e.touches.length === 1 && lastTouch) {
+            const rect = svg.getBoundingClientRect();
+            const dx = -(e.touches[0].clientX - lastTouch.clientX) / rect.width  * viewBox.w;
+            const dy = -(e.touches[0].clientY - lastTouch.clientY) / rect.height * viewBox.h;
+            lastTouch = e.touches[0];
+            setView(viewBox.x + dx, viewBox.y + dy, viewBox.w, viewBox.h);
+          }
+        }, { passive: false });
+
         // Her ilçeye renk ve event ekle
         svg.querySelectorAll('g.ilce').forEach(ilceEl => {
           const svgId   = ilceEl.id; // örn: "adana-aladag"
@@ -359,8 +457,9 @@
             tooltip.style.display = 'none';
           });
 
-          // Tıklama
-          ilceEl.addEventListener('click', () => {
+          // Tıklama — gezildi ise ilçe sayfasına git, diğerleri tooltip'te zaten bilgi var
+          ilceEl.addEventListener('click', (e) => {
+            if (dragging) return; // pan sırasında tıklama sayılmasın
             if (durum === 'gezildi' && veri) {
               window.location.href = `./ilce.html?id=${veri.id}`;
             }

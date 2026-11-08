@@ -333,6 +333,9 @@
         wrap.style.display = '';
 
         const svg = wrap.querySelector('svg');
+        // SVG içindeki varsayılan stili temizle
+        const svgStyle = svg.querySelector('style');
+        if (svgStyle) svgStyle.remove();
 
         // Tooltip elementi — index.html'de yoksa oluştur
         let tooltip = document.getElementById('harita-tooltip');
