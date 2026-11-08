@@ -378,8 +378,7 @@
                   <option value="gezildi">✅ Gezildi</option>
                   <option value="kismen">🔵 Kısmen</option>
                   <option value="gecildi">🟡 Yoldan Geçildi</option>
-                </select>
-                <button id="harita-kaydet-btn" class="btn btn-primary btn-sm" style="width:auto;">Kaydet</button>
+                </select>                <button id="harita-kaydet-btn" class="btn btn-primary btn-sm" style="width:auto;">Kaydet</button>
                 <button id="harita-iptal-btn" class="btn btn-secondary btn-sm" style="width:auto;">İptal</button>
               </div>
             </div>
@@ -1416,16 +1415,18 @@
           ilcelerHById[d.id] = obj;
         });
 
-        // featureIndex -> { ilceId, topoAd, topoIl }
+        // featureIndex -> { ilceId, topoAd, topoIl, durum }
         const eslesmeMap = {};
         const eslesmeTopoAd = {};
         const eslesmeTopoIl = {};
+        const eslesmeTopoKendi = {}; // ilceId olmadan kaydedilen durum
         eslesmeSnap.docs.forEach(d => {
           const data = d.data();
           if (data.svgId) {
             if (data.ilceId) eslesmeMap[data.svgId] = data.ilceId;
             if (data.topoAd) eslesmeTopoAd[data.svgId] = data.topoAd;
             if (data.topoIl) eslesmeTopoIl[data.svgId] = data.topoIl;
+            if (data.durum)  eslesmeTopoKendi[data.svgId] = data.durum;
           }
         });
 
@@ -1485,7 +1486,7 @@
             const idx    = String(ilceGeo.features.indexOf(feature));
             const ilceId = eslesmeMap[idx];
             const veri   = ilceId ? ilcelerHById[ilceId] : null;
-            const durum  = veri ? veri.durum : 'gezilmedi';
+            const durum  = veri ? veri.durum : (eslesmeTopoKendi[idx] || 'gezilmedi');
             return {
               fillColor:   RENK[durum],
               fillOpacity: durum==='gezilmedi' ? 0.6 : 0.85,
@@ -1508,7 +1509,7 @@
                 e.target.bringToFront();
                 const ttIlceId = eslesmeMap[idx];
                 const ttVeri   = ttIlceId ? ilcelerHById[ttIlceId] : null;
-                const ttDurum  = ttVeri ? ttVeri.durum : 'gezilmedi';
+                const ttDurum  = ttVeri ? ttVeri.durum : (eslesmeTopoKendi[idx] || 'gezilmedi');
                 const ttAd     = ttVeri ? ttVeri.ad : (eslesmeTopoAd[idx] || '');
                 const ttIl     = ttVeri ? ttVeri.il : (eslesmeTopoIl[idx] || '');
                 if (ttAd) {
@@ -1535,7 +1536,7 @@
                 // Her tıklamada güncel değerleri map'ten oku
                 const guncelIlceId = eslesmeMap[idx];
                 const guncelVeri   = guncelIlceId ? ilcelerHById[guncelIlceId] : null;
-                const guncelDurum  = guncelVeri ? guncelVeri.durum : 'gezilmedi';
+                const guncelDurum  = guncelVeri ? guncelVeri.durum : (eslesmeTopoKendi[idx] || 'gezilmedi');
                 const guncelAd     = guncelVeri ? guncelVeri.ad : (eslesmeTopoAd[idx] || '');
                 const guncelIl     = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
 
@@ -1586,8 +1587,8 @@
               await updateDoc(doc(db,'ilceler',ilceId),{durum});
             }
 
-            // 2) Eşleştirme kaydet (featureIndex -> ilceId + topoAd)
-            const kayitData = { svgId: seciliIdx, topoAd, topoIl };
+            // 2) Eşleştirme kaydet (featureIndex -> ilceId + topoAd + topoIl + durum)
+            const kayitData = { svgId: seciliIdx, topoAd, topoIl, durum };
             if (ilceId) kayitData.ilceId = ilceId;
 
             const mevcutDoc = eslesmeSnap.docs.find(d=>d.data().svgId===seciliIdx);
@@ -1598,15 +1599,17 @@
             }
 
             // 3) Local map güncelle
-            eslesmeTopoAd[seciliIdx] = topoAd;
-            eslesmeTopoIl[seciliIdx] = topoIl;
+            eslesmeTopoAd[seciliIdx]    = topoAd;
+            eslesmeTopoIl[seciliIdx]    = topoIl;
+            eslesmeTopoKendi[seciliIdx] = durum;
             if (ilceId) {
               eslesmeMap[seciliIdx] = ilceId;
               if (ilcelerHById[ilceId]) ilcelerHById[ilceId].durum = durum;
             }
+
+            // 4) Haritada rengi anında güncelle
             if (seciliLayer) {
-              const yeniDurum = ilceId ? durum : 'gezilmedi';
-              seciliLayer.setStyle({ fillColor:RENK[yeniDurum], fillOpacity: yeniDurum==='gezilmedi'?0.6:0.85, color:'#b8a898', weight:0.5 });
+              seciliLayer.setStyle({ fillColor:RENK[durum], fillOpacity: durum==='gezilmedi'?0.6:0.85, color:'#b8a898', weight:0.5 });
               seciliLayer = null;
             }
 
