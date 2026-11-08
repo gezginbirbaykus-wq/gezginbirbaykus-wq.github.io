@@ -12,7 +12,6 @@
   <meta name="twitter:card" content="summary" />
   <meta name="google-site-verification" content="m69ymHHjHIX-W_HeFWjD5h2g_j0WRiqdt2JHLeJe8NM" />
   <link rel="stylesheet" href="./css/style.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦉</text></svg>" />
 </head>
 <body>
@@ -56,7 +55,7 @@
       <div id="anasayfa-harita-yukle" style="display:flex;align-items:center;justify-content:center;height:420px;gap:12px;color:var(--brown-60);">
         <div class="spinner"></div><p>Harita yükleniyor...</p>
       </div>
-      <div id="anasayfa-harita" style="display:none;height:420px;border-radius:16px;border:1px solid var(--border);overflow:hidden;margin-bottom:52px;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
+      <div class="svg-harita-mini-wrap" id="anasayfa-harita" style="display:none;margin-bottom:52px;"></div>
     </div>
 
     <div class="kesfet-header">
