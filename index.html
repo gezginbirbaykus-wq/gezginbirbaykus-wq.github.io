@@ -427,7 +427,39 @@
         function puanRenk(p) { return RENK[p] ?? RENK[0]; }
         function puanOpak(p) { return p === 0 ? 0.6 : 0.85; }
 
-        document.getElementById('h-yukle').style.display = 'none';
+        // Koordinat merkezi hesaplama yardımcısı
+        function featureMerkez(feature) {
+          const coords = feature.geometry.type === 'Polygon'
+            ? feature.geometry.coordinates[0]
+            : feature.geometry.coordinates[0][0];
+          const lon = coords.reduce((a,b)=>a+b[0],0)/coords.length;
+          const lat = coords.reduce((a,b)=>a+b[1],0)/coords.length;
+          return [lon, lat];
+        }
+
+        // Kayıtlı feature'ların merkez + puan listesi (komşu arama için)
+        const kayitliMerkezler = [];
+        ilceGeo.features.forEach((f, fi) => {
+          const fIdx = String(fi);
+          const fAd  = eslesmeTopoAd[fIdx] || '';
+          const fIl  = eslesmeTopoIl[fIdx] || '';
+          const fIlceId = eslesme[fIdx];
+          const fVeri   = fIlceId ? byId[fIlceId] : null;
+          const fPuan   = fVeri ? fVeri.puan : (eslesmeTopoKendi[fIdx] ?? 0);
+          if (fAd && fPuan > 0) {
+            kayitliMerkezler.push({ lon: featureMerkez(f)[0], lat: featureMerkez(f)[1], puan: fPuan, ad: fAd, il: fIl });
+          }
+        });
+
+        function enYakinPuan(feature) {
+          const [cLon, cLat] = featureMerkez(feature);
+          let minDist = Infinity, yakinPuan = 0;
+          for (const m of kayitliMerkezler) {
+            const d = (cLon-m.lon)**2 + (cLat-m.lat)**2;
+            if (d < minDist) { minDist = d; yakinPuan = m.puan; }
+          }
+          return minDist < 0.04 ? yakinPuan : 0; // ~20km eşiği (derece²)
+        }
         const haritaEl = document.getElementById('h-leaflet');
         haritaEl.style.display = '';
         haritaEl.style.background = '#FDFAF6';
@@ -470,7 +502,8 @@
             const normKey = hn(topoAd) + '_' + hn(topoIl);
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
+                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0)
+                         : enYakinPuan(feature)));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
@@ -488,7 +521,8 @@
             const normKeyStr = hn(topoAdStr) + '_' + hn(topoIlStr);
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAdStr && topoIlStr ? (adPuanMap[normKeyStr] ?? 0) : 0));
+                         : (topoAdStr && topoIlStr ? (adPuanMap[normKeyStr] ?? 0)
+                         : enYakinPuan(feature)));
             const ad     = veri ? veri.ad : (topoAdStr || '');
             const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
 
