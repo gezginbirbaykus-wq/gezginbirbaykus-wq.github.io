@@ -1585,64 +1585,19 @@
                 seciliIdx   = idx;
                 layer.setStyle({ weight:2.5, color:'#9B6240', fillOpacity:0.95 });
 
-                // Her tıklamada güncel değerleri map'ten oku
                 const guncelIlceId = eslesmeMap[idx];
                 const guncelVeri   = guncelIlceId ? ilcelerHById[guncelIlceId] : null;
                 const guncelPuan   = guncelVeri ? guncelVeri.puan : (eslesmeTopoKendi[idx] ?? 0);
-                let guncelAd       = guncelVeri ? guncelVeri.ad : (eslesmeTopoAd[idx] || '');
-                let guncelIl       = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
-
-                // Kayıtsız feature için en yakın kaydedilmiş komşuyu öner
-                if (!guncelAd) {
-                  const feat = ilceGeo.features[parseInt(idx)];
-                  const coords = feat.geometry.type === 'Polygon'
-                    ? feat.geometry.coordinates[0]
-                    : feat.geometry.coordinates[0][0];
-                  const lons = coords.map(c => c[0]);
-                  const lats = coords.map(c => c[1]);
-                  const cLon = lons.reduce((a,b)=>a+b,0)/lons.length;
-                  const cLat = lats.reduce((a,b)=>a+b,0)/lats.length;
-
-                  let minDist = Infinity, yakinAd = '', yakinIl = '', yakinIlceId = '', yakinPuan = 0;
-                  ilceGeo.features.forEach((f, fi) => {
-                    const fIdx = String(fi);
-                    const fAd = eslesmeTopoAd[fIdx] || '';
-                    if (!fAd) return;
-                    const fc = f.geometry.type === 'Polygon'
-                      ? f.geometry.coordinates[0]
-                      : f.geometry.coordinates[0][0];
-                    const fLon = fc.reduce((a,b)=>a+b[0],0)/fc.length;
-                    const fLat = fc.reduce((a,b)=>a+b[1],0)/fc.length;
-                    const dist = Math.sqrt((cLon-fLon)**2 + (cLat-fLat)**2);
-                    if (dist < minDist) {
-                      minDist = dist;
-                      yakinAd = fAd;
-                      yakinIl = eslesmeTopoIl[fIdx] || '';
-                      yakinIlceId = eslesmeMap[fIdx] || '';
-                      yakinPuan = eslesmeTopoKendi[fIdx] ?? 0;
-                    }
-                  });
-                  if (yakinAd && minDist < 0.3) { // ~30km eşiği
-                    guncelAd = yakinAd;
-                    guncelIl = yakinIl;
-                    document.getElementById('harita-kaydet-alert').innerHTML =
-                      `<div class="alert" style="background:#fff8e1;border-color:#ffc107;color:#856404;font-size:0.8rem;">💡 En yakın kayıt: <b>${yakinAd}</b> — uygunsa kaydet, değilse düzenle.</div>`;
-                    if (yakinIlceId) {
-                      document.getElementById('harita-eslesme-select').value = yakinIlceId;
-                      document.getElementById('harita-puan-select').value = yakinPuan;
-                    }
-                  }
-                }
+                const guncelAd     = guncelVeri ? guncelVeri.ad : (eslesmeTopoAd[idx] || '');
+                const guncelIl     = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
 
                 document.getElementById('harita-topo-ad-input').value = guncelAd;
                 document.getElementById('harita-topo-il-input').value = guncelIl;
                 document.getElementById('harita-secim-panel').style.display = '';
-                if (!guncelAd) document.getElementById('harita-kaydet-alert').innerHTML = '';
+                document.getElementById('harita-kaydet-alert').innerHTML = '';
                 document.getElementById('harita-feature-idx').textContent = `#${idx}`;
-                if (!document.getElementById('harita-eslesme-select').value)
-                  document.getElementById('harita-eslesme-select').value = guncelIlceId || '';
-                if (!document.getElementById('harita-puan-select').value || guncelIlceId)
-                  document.getElementById('harita-puan-select').value = guncelPuan;
+                document.getElementById('harita-eslesme-select').value = guncelIlceId || '';
+                document.getElementById('harita-puan-select').value    = guncelPuan;
               }
             });
           }
