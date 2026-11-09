@@ -437,28 +437,30 @@
           return [lon, lat];
         }
 
-        // Kayıtlı feature'ların merkez + puan listesi (komşu arama için)
+        // Kayıtlı feature'ların merkez listesi — Firestore ilceId'si olanlar dahil
         const kayitliMerkezler = [];
         ilceGeo.features.forEach((f, fi) => {
-          const fIdx = String(fi);
-          const fAd  = eslesmeTopoAd[fIdx] || '';
-          const fIl  = eslesmeTopoIl[fIdx] || '';
+          const fIdx    = String(fi);
           const fIlceId = eslesme[fIdx];
           const fVeri   = fIlceId ? byId[fIlceId] : null;
+          const fAd     = fVeri ? fVeri.ad  : (eslesmeTopoAd[fIdx] || '');
+          const fIl     = fVeri ? fVeri.il  : (eslesmeTopoIl[fIdx] || '');
           const fPuan   = fVeri ? fVeri.puan : (eslesmeTopoKendi[fIdx] ?? 0);
-          if (fAd && fPuan > 0) {
-            kayitliMerkezler.push({ lon: featureMerkez(f)[0], lat: featureMerkez(f)[1], puan: fPuan, ad: fAd, il: fIl });
+          if (fAd) {
+            const [lon, lat] = featureMerkez(f);
+            kayitliMerkezler.push({ lon, lat, puan: fPuan, ad: fAd, il: fIl, ilceId: fIlceId || null });
           }
         });
 
-        function enYakinPuan(feature) {
+        // Kayıtsız feature için en yakın komşuyu döndür — ilceId, ad, il, puan
+        function enYakinKomsu(feature) {
           const [cLon, cLat] = featureMerkez(feature);
-          let minDist = Infinity, yakinPuan = 0;
+          let minDist = Infinity, sonuc = { puan: 0, ad: '', il: '', ilceId: null };
           for (const m of kayitliMerkezler) {
-            const d = (cLon-m.lon)**2 + (cLat-m.lat)**2;
-            if (d < minDist) { minDist = d; yakinPuan = m.puan; }
+            const d = (cLon - m.lon) ** 2 + (cLat - m.lat) ** 2;
+            if (d < minDist) { minDist = d; sonuc = m; }
           }
-          return minDist < 0.04 ? yakinPuan : 0; // ~20km eşiği (derece²)
+          return minDist < 0.09 ? sonuc : { puan: 0, ad: '', il: '', ilceId: null }; // ~30km eşiği
         }
         const haritaEl = document.getElementById('h-leaflet');
         haritaEl.style.display = '';
@@ -503,7 +505,7 @@
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
                          : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0)
-                         : enYakinPuan(feature)));
+                         : enYakinKomsu(feature).puan));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
@@ -519,19 +521,27 @@
             const topoAdStr = eslesmeTopoAd[idx] || '';
             const topoIlStr = eslesmeTopoIl[idx] || '';
             const normKeyStr = hn(topoAdStr) + '_' + hn(topoIlStr);
-            const puan   = veri ? veri.puan
-                         : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAdStr && topoIlStr ? (adPuanMap[normKeyStr] ?? 0)
-                         : enYakinPuan(feature)));
-            const ad     = veri ? veri.ad : (topoAdStr || '');
-            const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
+
+            // Puan + komşu bilgisi hesapla
+            let puan, adGoster, ilGoster, gosterIlceId;
+            if (veri) {
+              puan = veri.puan; adGoster = veri.ad; ilGoster = veri.il; gosterIlceId = ilceId;
+            } else if (eslesmeTopoKendi[idx] !== undefined) {
+              puan = eslesmeTopoKendi[idx]; adGoster = topoAdStr; ilGoster = topoIlStr; gosterIlceId = null;
+            } else if (topoAdStr && topoIlStr) {
+              puan = adPuanMap[normKeyStr] ?? 0; adGoster = topoAdStr; ilGoster = topoIlStr; gosterIlceId = null;
+            } else {
+              // Kayıtsız feature — en yakın komşudan al (Cunda → Ayvalık gibi)
+              const komsу = enYakinKomsu(feature);
+              puan = komsу.puan; adGoster = komsу.ad; ilGoster = komsу.il; gosterIlceId = komsу.ilceId;
+            }
 
             layer.on({
               mouseover(e) {
                 e.target.setStyle({ weight: 1.5, fillOpacity: 0.95, color: '#7a5540' });
                 e.target.bringToFront();
-                if (ad) {
-                  tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${puanRenk(puan)};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.2);"></span>${ad}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${il}</span>${puan>=4?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
+                if (adGoster) {
+                  tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${puanRenk(puan)};margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.2);"></span>${adGoster}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${ilGoster}</span>${puan>=4?'<span style="display:block;font-size:0.7rem;color:#27ae60;">→ içeriğe git</span>':''}`;
                   tooltip.style.display = 'block';
                 }
               },
@@ -544,7 +554,8 @@
                 tooltip.style.top  = (e.originalEvent.clientY-10)+'px';
               },
               click() {
-                if (puan >= 4 && veri) window.location.href = `./ilce.html?id=${veri.id}`;
+                const hedefId = gosterIlceId || (veri ? veri.id : null);
+                if (puan >= 4 && hedefId) window.location.href = `./ilce.html?id=${hedefId}`;
               }
             });
           }
