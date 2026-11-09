@@ -363,7 +363,7 @@
 
               <!-- İlçe + İl adı inputları -->
               <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:200px;">
-                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);">Haritada Seçilen</div>
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);">Haritada Seçilen — <span id="harita-feature-idx" style="font-family:monospace;opacity:0.6;"></span></div>
                 <input id="harita-topo-ad-input" type="text" placeholder="İlçe adı  (Derecik)" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:'Sanchez',serif;font-style:italic;color:var(--brown);background:var(--bg-card);box-sizing:border-box;" />
                 <input id="harita-topo-il-input" type="text" placeholder="İl adı  (Hakkari)" style="width:100%;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-muted);background:var(--bg-card);box-sizing:border-box;" />
               </div>
@@ -1462,17 +1462,28 @@
             return `<option value="${i.id}">${i.ad}${ilAd ? ' — ' + ilAd : ''}</option>`;
           }).join('');
 
-        // isim -> puan reverse map (aynı isimli tüm feature'lar için)
-        const adPuanMap = {}; // normalize(topoAd) -> puan
+        // "ilceadi_iladi" -> puan reverse map (aynı ada+il kombinasyonlu parçalar için)
+        const adPuanMap = {};
         Object.entries(eslesmeTopoAd).forEach(([idx, ad]) => {
-          const norm = aN(ad);
+          const il   = eslesmeTopoIl[idx] || '';
+          const norm = aN(ad) + '_' + aN(il);
           const puan = eslesmeTopoKendi[idx] ?? 0;
-          if (puan > 0) adPuanMap[norm] = puan;
+          if (puan > 0 && il) adPuanMap[norm] = puan;
         });
-        // Firestore ilçelerinden de ekle
         Object.entries(eslesmeMap).forEach(([idx, ilceId]) => {
           const veri = ilcelerHById[ilceId];
-          if (veri && veri.puan > 0) adPuanMap[aN(veri.ad)] = veri.puan;
+          if (veri && veri.puan > 0) {
+            const il   = eslesmeTopoIl[idx] || '';
+            const norm = aN(veri.ad) + '_' + aN(il);
+            if (il) adPuanMap[norm] = veri.puan;
+          }
+        });
+        // Spinner'ı gizle, harita div'ini göster
+        document.getElementById('admin-harita-yukle').style.display = 'none';
+        // svgId → Firestore doc id haritası (kayıtlar için)
+        const eslesmeDocIdMap = {};
+        eslesmeSnap.docs.forEach(d => {
+          if (d.data().svgId !== undefined) eslesmeDocIdMap[d.data().svgId] = d.id;
         });
         const haritaEl = document.getElementById('admin-harita');
         haritaEl.style.visibility = 'visible';
@@ -1518,9 +1529,11 @@
             const veri   = ilceId ? ilcelerHById[ilceId] : null;
             // 1) Firestore ilçesi, 2) index bazlı kayıt, 3) aynı isimli başka kayıt
             const topoAd = eslesmeTopoAd[idx] || '';
+            const topoIl = eslesmeTopoIl[idx] || '';
+            const normKey = aN(topoAd) + '_' + aN(topoIl);
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAd ? (adPuanMap[aN(topoAd)] ?? 0) : 0));
+                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
@@ -1578,6 +1591,7 @@
                 document.getElementById('harita-topo-il-input').value = guncelIl;
                 document.getElementById('harita-secim-panel').style.display = '';
                 document.getElementById('harita-kaydet-alert').innerHTML = '';
+                document.getElementById('harita-feature-idx').textContent = `#${idx}`;
                 document.getElementById('harita-eslesme-select').value = guncelIlceId || '';
                 document.getElementById('harita-puan-select').value    = guncelPuan;
               }
@@ -1626,11 +1640,12 @@
             const kayitData = { svgId: seciliIdx, topoAd, topoIl, puan };
             if (ilceId) kayitData.ilceId = ilceId;
 
-            const mevcutDoc = eslesmeSnap.docs.find(d=>d.data().svgId===seciliIdx);
-            if (mevcutDoc) {
-              await updateDoc(doc(db,'haritaEslesme',mevcutDoc.id), kayitData);
+            const mevcutDocId = eslesmeDocIdMap[seciliIdx];
+            if (mevcutDocId) {
+              await updateDoc(doc(db,'haritaEslesme', mevcutDocId), kayitData);
             } else {
-              await addDoc(collection(db,'haritaEslesme'), kayitData);
+              const yeniDoc = await addDoc(collection(db,'haritaEslesme'), kayitData);
+              eslesmeDocIdMap[seciliIdx] = yeniDoc.id;
             }
 
             // 3) Local map güncelle
@@ -1641,15 +1656,29 @@
               eslesmeMap[seciliIdx] = ilceId;
               if (ilcelerHById[ilceId]) ilcelerHById[ilceId].puan = puan;
             }
+            // adPuanMap'i de güncelle — aynı ad+il'e sahip diğer parçalar hemen renklensin
+            const normKey = aN(topoAd) + '_' + aN(topoIl);
+            if (topoAd && topoIl && puan > 0) adPuanMap[normKey] = puan;
 
-            // 4) Haritada rengi anında güncelle
+            // 4) Haritada aynı ad+il'e sahip TÜM parçaları güncelle
+            ilceKatman.eachLayer(layer => {
+              const lIdx = String(ilceGeo.features.indexOf(layer.feature));
+              if (lIdx === seciliIdx) return; // zaten güncellendi
+              const lAd  = eslesmeTopoAd[lIdx] || '';
+              const lIl  = eslesmeTopoIl[lIdx] || '';
+              if (aN(lAd) === aN(topoAd) && aN(lIl) === aN(topoIl)) {
+                layer.setStyle({ fillColor: puanRenk(puan), fillOpacity: puanOpak(puan), color:'#b8a898', weight:0.5 });
+              }
+            });
+
+            // 5) Seçili katmanı güncelle
             if (seciliLayer) {
               seciliLayer.setStyle({ fillColor: puanRenk(puan), fillOpacity: puanOpak(puan), color:'#b8a898', weight:0.5 });
               seciliLayer = null;
             }
 
-            alertEl.innerHTML='<div class="alert alert-success">✅ Kaydedildi!</div>';
-            setTimeout(() => { document.getElementById('harita-secim-panel').style.display='none'; }, 1200);
+            alertEl.innerHTML='<div class="alert alert-success">✅ Kaydedildi! Başka bir parçaya tıkla veya paneli kapat.</div>';
+            // Panel açık kalır — ada/çok parçalı ilçeler için aynı ayarı hızlıca tekrar kullanabilirsin
           } catch(err) {
             alertEl.innerHTML=`<div class="alert alert-error">Hata: ${err.message}</div>`;
           } finally {
@@ -1660,6 +1689,7 @@
         document.getElementById('harita-iptal-btn').onclick = () => {
           if (seciliLayer) { ilceKatman.resetStyle(seciliLayer); seciliLayer=null; }
           document.getElementById('harita-secim-panel').style.display='none';
+          document.getElementById('harita-feature-idx').textContent = '';
         };
 
       } catch(err) {

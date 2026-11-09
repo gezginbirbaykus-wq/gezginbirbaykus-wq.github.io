@@ -369,16 +369,21 @@
           }
         });
 
-        // isim -> puan reverse map
+        // "ilceadi_iladi" -> puan reverse map
         const adPuanMap = {};
         Object.entries(eslesmeTopoAd).forEach(([idx, ad]) => {
-          const norm = hn(ad);
+          const il   = eslesmeTopoIl[idx] || '';
+          const norm = hn(ad) + '_' + hn(il);
           const puan = eslesmeTopoKendi[idx] ?? 0;
-          if (puan > 0) adPuanMap[norm] = puan;
+          if (puan > 0 && il) adPuanMap[norm] = puan;
         });
         Object.entries(eslesme).forEach(([idx, ilceId]) => {
           const veri = byId[ilceId];
-          if (veri && veri.puan > 0) adPuanMap[hn(veri.ad)] = veri.puan;
+          if (veri && veri.puan > 0) {
+            const il   = eslesmeTopoIl[idx] || '';
+            const norm = hn(veri.ad) + '_' + hn(il);
+            if (il) adPuanMap[norm] = veri.puan;
+          }
         });
         const sayilar = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0};
         // haritaEslesme'den puan topla (Firestore ilçesi olmayan eşleşmeler dahil)
@@ -461,9 +466,11 @@
             const ilceId = eslesme[idx];
             const veri   = ilceId ? byId[ilceId] : null;
             const topoAd = eslesmeTopoAd[idx] || '';
+            const topoIl = eslesmeTopoIl[idx] || '';
+            const normKey = hn(topoAd) + '_' + hn(topoIl);
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAd ? (adPuanMap[hn(topoAd)] ?? 0) : 0));
+                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
@@ -477,10 +484,12 @@
             const ilceId = eslesme[idx];
             const veri   = ilceId ? byId[ilceId] : null;
             const topoAdStr = eslesmeTopoAd[idx] || '';
+            const topoIlStr = eslesmeTopoIl[idx] || '';
+            const normKeyStr = hn(topoAdStr) + '_' + hn(topoIlStr);
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAdStr ? (adPuanMap[hn(topoAdStr)] ?? 0) : 0));
-            const ad     = veri ? veri.ad : (topoAdStr || (adPuanMap[hn(topoAdStr)] !== undefined ? topoAdStr : ''));
+                         : (topoAdStr && topoIlStr ? (adPuanMap[normKeyStr] ?? 0) : 0));
+            const ad     = veri ? veri.ad : (topoAdStr || '');
             const il     = veri ? veri.il : (eslesmeTopoIl[idx] || '');
 
             layer.on({
