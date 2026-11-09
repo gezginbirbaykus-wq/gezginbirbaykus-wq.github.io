@@ -58,6 +58,7 @@
           <button class="admin-tab" data-tab="il">İller</button>
           <button class="admin-tab" data-tab="ilce">İlçeler</button>
           <button class="admin-tab" data-tab="harita">🗺️ Harita</button>
+          <button class="admin-tab" data-tab="srb-harita">🗺️ Sırbistan</button>
         </div>
         <button id="cikis-btn" class="btn btn-secondary btn-sm">Çıkış Yap</button>
       </div>
@@ -419,6 +420,55 @@
           </div>
         </div>
       </div><!-- /tab-harita -->
+
+      <!-- ===== SIRBİSTAN HARİTA TAB ===== -->
+      <div class="tab-panel" id="tab-srb-harita">
+        <div class="admin-card">
+          <h3>Sırbistan Belediye Haritası Düzenleyici</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
+            Haritada bir belediyeye tıkla → isim yaz → puan ver → kaydet.
+          </p>
+
+          <!-- Seçilen belediye paneli -->
+          <div id="srb-secim-panel" style="display:none;background:var(--bg);border:1.5px solid var(--brown-40);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+            <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+              <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:200px;">
+                <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);">Haritada Seçilen — <span id="srb-feature-idx" style="font-family:monospace;opacity:0.6;"></span></div>
+                <input id="srb-topo-ad-input" type="text" placeholder="Belediye adı (Beograd)" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;font-family:'Sanchez',serif;font-style:italic;color:var(--brown);background:var(--bg-card);box-sizing:border-box;" />
+                <input id="srb-topo-okrug-input" type="text" placeholder="Okrug (Beogradski)" style="width:100%;padding:6px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.82rem;color:var(--text-muted);background:var(--bg-card);box-sizing:border-box;" />
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:22px;">
+                <select id="srb-puan-select" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.88rem;background:var(--bg-card);color:var(--text-main);">
+                  <option value="0">0 — Hiç gitmedim</option>
+                  <option value="1">1 — Yoldan geçtim</option>
+                  <option value="2">2 — Az gezdim</option>
+                  <option value="3">3 — Orta gezdim</option>
+                  <option value="4">4 — Çok gezdim</option>
+                  <option value="5">5 — Her yerini gezdim</option>
+                </select>
+                <button id="srb-kaydet-btn" class="btn btn-primary btn-sm" style="width:auto;">Kaydet</button>
+                <button id="srb-iptal-btn" class="btn btn-secondary btn-sm" style="width:auto;">İptal</button>
+              </div>
+            </div>
+            <div id="srb-kaydet-alert" style="margin-top:10px;"></div>
+          </div>
+
+          <div id="srb-admin-yukle" style="display:flex;align-items:center;justify-content:center;height:480px;gap:12px;color:var(--brown-60);">
+            <div class="spinner"></div><p>Harita yükleniyor...</p>
+          </div>
+          <div id="srb-admin-harita" style="visibility:hidden;height:480px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:#FDFAF6;"></div>
+
+          <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#1a7a3a;border-radius:2px;"></span> 5 — Her yer</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#4CAF50;border-radius:2px;"></span> 4 — Çok</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#8BC34A;border-radius:2px;"></span> 3 — Orta</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#FFC107;border-radius:2px;"></span> 2 — Az</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#FF7043;border-radius:2px;"></span> 1 — Yoldan geçtim</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#ffffff;border:1.5px solid #aaa;border-radius:2px;"></span> 0 — Gitmedim</div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#d8d4ce;border:1px solid #bbb;border-radius:2px;"></span> İşaretlenmedi</div>
+          </div>
+        </div>
+      </div><!-- /tab-srb-harita -->
 
     </div>
   </div>
@@ -1734,6 +1784,200 @@
         .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ş/g,'s')
         .replace(/ç/g,'c').replace(/ö/g,'o').replace(/ü/g,'u')
         .trim();
+    }
+
+    // ===== SIRBİSTAN HARİTA YÜKLEME =====
+    let srbAdminYuklendi = false;
+    document.querySelectorAll('.admin-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.tab === 'srb-harita' && !srbAdminYuklendi) {
+          srbAdminYuklendi = true;
+          setTimeout(() => srbAdminHaritaYukle(), 50);
+        }
+      });
+    });
+
+    async function srbAdminHaritaYukle() {
+      try {
+        const [eslesmeSnap, opstineGeo, okruziGeo] = await Promise.all([
+          getDocs(collection(db, 'srbHaritaEslesme')),
+          fetch('./assets/srbija-opstine.geojson').then(r => r.json()),
+          fetch('./assets/srbija-okruzi.geojson').then(r => r.json()),
+        ]);
+
+        const srbEslesme     = {};
+        const srbTopoAd      = {};
+        const srbTopoOkrug   = {};
+        const srbDocIdMap    = {};
+        eslesmeSnap.docs.forEach(d => {
+          const data = d.data();
+          if (data.svgId !== undefined) {
+            srbEslesme[data.svgId]   = data.puan ?? 0;
+            srbTopoAd[data.svgId]    = data.topoAd || '';
+            srbTopoOkrug[data.svgId] = data.topoOkrug || '';
+            srbDocIdMap[data.svgId]  = d.id;
+          }
+        });
+
+        const RENK = {5:'#1a7a3a',4:'#4CAF50',3:'#8BC34A',2:'#FFC107',1:'#FF7043',0:'#ffffff'};
+        function srbRenk(p)    { return RENK[p] ?? RENK[0]; }
+        function srbFill(p,k)  { return p>0 ? srbRenk(p) : k ? '#ffffff' : '#d8d4ce'; }
+        function srbOpak(p,k)  { return p>0 ? 0.85 : k ? 0.9 : 0.55; }
+
+        document.getElementById('srb-admin-yukle').style.display = 'none';
+        const srbEl = document.getElementById('srb-admin-harita');
+        srbEl.style.visibility = 'visible';
+
+        const srbHarita = L.map('srb-admin-harita', {
+          zoomControl: true, scrollWheelZoom: true, attributionControl: false, zoomSnap: 0.25,
+          center: [44.0, 21.0], zoom: 6.5, minZoom: 6, maxZoom: 11,
+          maxBounds: [[41.5,17.5],[46.5,24.5]], maxBoundsViscosity: 0.85,
+        });
+
+        const SrbReset = L.Control.extend({
+          options: { position: 'topleft' },
+          onAdd() {
+            const btn = L.DomUtil.create('button','leaflet-bar leaflet-control');
+            btn.innerHTML='⌂'; btn.title="Sırbistan'a dön";
+            btn.style.cssText='width:30px;height:30px;font-size:1rem;cursor:pointer;background:white;border:none;display:flex;align-items:center;justify-content:center;';
+            L.DomEvent.on(btn,'click',L.DomEvent.stopPropagation);
+            L.DomEvent.on(btn,'click',L.DomEvent.preventDefault);
+            L.DomEvent.on(btn,'click',()=>srbHarita.setView([44.0,21.0],6.5));
+            return btn;
+          }
+        });
+        new SrbReset().addTo(srbHarita);
+
+        const srbAdminTooltip = document.createElement('div');
+        srbAdminTooltip.style.cssText='position:fixed;background:rgba(255,255,255,0.97);border:1px solid #DEB898;border-radius:10px;padding:7px 13px;font-family:Inter,sans-serif;font-size:0.82rem;font-weight:700;color:#2A1F16;box-shadow:0 4px 16px rgba(0,0,0,0.12);pointer-events:none;z-index:9999;display:none;white-space:nowrap;';
+        document.body.appendChild(srbAdminTooltip);
+
+        let srbSeciliLayer = null, srbSeciliIdx = null;
+
+        const opstineKatman = L.geoJSON(opstineGeo, {
+          style: (feature) => {
+            const idx = String(opstineGeo.features.indexOf(feature));
+            const p = srbEslesme[idx] ?? 0, k = srbEslesme[idx] !== undefined;
+            return { fillColor: srbFill(p,k), fillOpacity: srbOpak(p,k), color:'#b8a898', weight:0.5, opacity:1 };
+          },
+          onEachFeature: (feature, layer) => {
+            const idx = String(opstineGeo.features.indexOf(feature));
+            layer.on({
+              mouseover(e) {
+                if (layer !== srbSeciliLayer) e.target.setStyle({ weight:1.5, fillOpacity:0.95, color:'#9B6240' });
+                e.target.bringToFront();
+                const p = srbEslesme[idx] ?? 0, k = srbEslesme[idx] !== undefined;
+                const ad = srbTopoAd[idx] || feature.properties.NAME_2 || '';
+                const okrug = srbTopoOkrug[idx] || feature.properties.NAME_1 || '';
+                if (ad) {
+                  srbAdminTooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${srbFill(p,k)};margin-right:6px;vertical-align:middle;border:1px solid #ccc;"></span>${ad}<span style="display:block;font-size:0.71rem;color:#9B6240;font-weight:400;">${okrug}</span>`;
+                  srbAdminTooltip.style.display='block';
+                }
+              },
+              mouseout(e) {
+                if (layer !== srbSeciliLayer) opstineKatman.resetStyle(e.target);
+                srbAdminTooltip.style.display='none';
+              },
+              mousemove(e) {
+                srbAdminTooltip.style.left=(e.originalEvent.clientX+14)+'px';
+                srbAdminTooltip.style.top=(e.originalEvent.clientY-10)+'px';
+              },
+              click() {
+                if (srbSeciliLayer) opstineKatman.resetStyle(srbSeciliLayer);
+                srbSeciliLayer = layer; srbSeciliIdx = idx;
+                layer.setStyle({ weight:2.5, color:'#9B6240', fillOpacity:0.95 });
+
+                const mevcutAd    = srbTopoAd[idx]    || feature.properties.NAME_2 || '';
+                const mevcutOkrug = srbTopoOkrug[idx] || feature.properties.NAME_1 || '';
+                const mevcutPuan  = srbEslesme[idx]   ?? 0;
+
+                // Okrug boşsa en yakın komşudan doldur
+                let okrugDoldur = mevcutOkrug;
+                if (!okrugDoldur) {
+                  const fc = feature.geometry.type === 'Polygon'
+                    ? feature.geometry.coordinates[0]
+                    : feature.geometry.coordinates[0][0];
+                  const cLon = fc.reduce((a,b)=>a+b[0],0)/fc.length;
+                  const cLat = fc.reduce((a,b)=>a+b[1],0)/fc.length;
+                  let minD = Infinity;
+                  opstineGeo.features.forEach((f,fi) => {
+                    const fOkrug = srbTopoOkrug[String(fi)] || f.properties.NAME_1 || '';
+                    if (!fOkrug) return;
+                    const rc = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+                    const fLon = rc.reduce((a,b)=>a+b[0],0)/rc.length;
+                    const fLat = rc.reduce((a,b)=>a+b[1],0)/rc.length;
+                    const d = (cLon-fLon)**2+(cLat-fLat)**2;
+                    if (d < minD) { minD=d; okrugDoldur=fOkrug; }
+                  });
+                }
+
+                document.getElementById('srb-topo-ad-input').value    = mevcutAd;
+                document.getElementById('srb-topo-okrug-input').value  = okrugDoldur;
+                document.getElementById('srb-puan-select').value       = mevcutPuan;
+                document.getElementById('srb-secim-panel').style.display = '';
+                document.getElementById('srb-kaydet-alert').innerHTML  = '';
+                document.getElementById('srb-feature-idx').textContent = `#${idx}`;
+              }
+            });
+          }
+        }).addTo(srbHarita);
+
+        // Okrug sınırları
+        const okrugKatman = L.geoJSON(okruziGeo, {
+          style: ()=>({ fillColor:'transparent', fillOpacity:0, color:'#6b4423', weight:2, opacity:1 }),
+          interactive: false,
+        }).addTo(srbHarita);
+        okrugKatman.bringToFront();
+        srbHarita.on('zoomend moveend', ()=>okrugKatman.bringToFront());
+        srbHarita.invalidateSize();
+        setTimeout(()=>{ srbHarita.invalidateSize(); srbHarita.setView([44.0,21.0],6.5); },400);
+
+        // Kaydet
+        document.getElementById('srb-kaydet-btn').onclick = async () => {
+          const puan     = parseInt(document.getElementById('srb-puan-select').value);
+          const topoAd   = document.getElementById('srb-topo-ad-input').value.trim();
+          const topoOkrug= document.getElementById('srb-topo-okrug-input').value.trim();
+          const alertEl  = document.getElementById('srb-kaydet-alert');
+          if (!topoAd) { alertEl.innerHTML='<div class="alert alert-error">Lütfen belediye adını yaz.</div>'; return; }
+
+          const btn = document.getElementById('srb-kaydet-btn');
+          btn.disabled=true; btn.textContent='Kaydediliyor...';
+          try {
+            const kayitData = { svgId: srbSeciliIdx, topoAd, topoOkrug, puan };
+            const mevcutId  = srbDocIdMap[srbSeciliIdx];
+            if (mevcutId) {
+              await updateDoc(doc(db,'srbHaritaEslesme',mevcutId), kayitData);
+            } else {
+              const yeni = await addDoc(collection(db,'srbHaritaEslesme'), kayitData);
+              srbDocIdMap[srbSeciliIdx] = yeni.id;
+            }
+            // Local güncelle
+            srbEslesme[srbSeciliIdx]   = puan;
+            srbTopoAd[srbSeciliIdx]    = topoAd;
+            srbTopoOkrug[srbSeciliIdx] = topoOkrug;
+            if (srbSeciliLayer) {
+              srbSeciliLayer.setStyle({ fillColor:srbFill(puan,true), fillOpacity:srbOpak(puan,true), color:'#b8a898', weight:0.5 });
+              srbSeciliLayer = null;
+            }
+            alertEl.innerHTML='<div class="alert alert-success">✅ Kaydedildi! Başka bir belediyeye tıkla veya paneli kapat.</div>';
+          } catch(err) {
+            alertEl.innerHTML=`<div class="alert alert-error">Hata: ${err.message}</div>`;
+          } finally {
+            btn.disabled=false; btn.textContent='Kaydet';
+          }
+        };
+
+        document.getElementById('srb-iptal-btn').onclick = () => {
+          if (srbSeciliLayer) { opstineKatman.resetStyle(srbSeciliLayer); srbSeciliLayer=null; }
+          document.getElementById('srb-secim-panel').style.display='none';
+          document.getElementById('srb-feature-idx').textContent='';
+        };
+
+      } catch(err) {
+        console.error('Sırbistan admin harita hatası:', err);
+        document.getElementById('srb-admin-yukle').innerHTML=
+          `<div class="empty-state"><p>Harita yüklenemedi: ${err.message}</p></div>`;
+      }
     }
 
   </script>
