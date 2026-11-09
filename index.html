@@ -427,41 +427,7 @@
         function puanRenk(p) { return RENK[p] ?? RENK[0]; }
         function puanOpak(p) { return p === 0 ? 0.6 : 0.85; }
 
-        // Koordinat merkezi hesaplama yardımcısı
-        function featureMerkez(feature) {
-          const coords = feature.geometry.type === 'Polygon'
-            ? feature.geometry.coordinates[0]
-            : feature.geometry.coordinates[0][0];
-          const lon = coords.reduce((a,b)=>a+b[0],0)/coords.length;
-          const lat = coords.reduce((a,b)=>a+b[1],0)/coords.length;
-          return [lon, lat];
-        }
-
-        // Kayıtlı feature'ların merkez listesi — Firestore ilceId'si olanlar dahil
-        const kayitliMerkezler = [];
-        ilceGeo.features.forEach((f, fi) => {
-          const fIdx    = String(fi);
-          const fIlceId = eslesme[fIdx];
-          const fVeri   = fIlceId ? byId[fIlceId] : null;
-          const fAd     = fVeri ? fVeri.ad  : (eslesmeTopoAd[fIdx] || '');
-          const fIl     = fVeri ? fVeri.il  : (eslesmeTopoIl[fIdx] || '');
-          const fPuan   = fVeri ? fVeri.puan : (eslesmeTopoKendi[fIdx] ?? 0);
-          if (fAd) {
-            const [lon, lat] = featureMerkez(f);
-            kayitliMerkezler.push({ lon, lat, puan: fPuan, ad: fAd, il: fIl, ilceId: fIlceId || null });
-          }
-        });
-
-        // Kayıtsız feature için en yakın komşuyu döndür — ilceId, ad, il, puan
-        function enYakinKomsu(feature) {
-          const [cLon, cLat] = featureMerkez(feature);
-          let minDist = Infinity, sonuc = { puan: 0, ad: '', il: '', ilceId: null };
-          for (const m of kayitliMerkezler) {
-            const d = (cLon - m.lon) ** 2 + (cLat - m.lat) ** 2;
-            if (d < minDist) { minDist = d; sonuc = m; }
-          }
-          return minDist < 0.09 ? sonuc : { puan: 0, ad: '', il: '', ilceId: null }; // ~30km eşiği
-        }
+        document.getElementById('h-yukle').style.display = 'none';
         const haritaEl = document.getElementById('h-leaflet');
         haritaEl.style.display = '';
         haritaEl.style.background = '#FDFAF6';
@@ -505,7 +471,7 @@
             const puan   = veri ? veri.puan
                          : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
                          : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0)
-                         : enYakinKomsu(feature).puan));
+                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
             return {
               fillColor:   puanRenk(puan),
               fillOpacity: puanOpak(puan),
@@ -522,18 +488,15 @@
             const topoIlStr = eslesmeTopoIl[idx] || '';
             const normKeyStr = hn(topoAdStr) + '_' + hn(topoIlStr);
 
-            // Puan + komşu bilgisi hesapla
+            // Puan + ad/il bilgisi
             let puan, adGoster, ilGoster, gosterIlceId;
             if (veri) {
               puan = veri.puan; adGoster = veri.ad; ilGoster = veri.il; gosterIlceId = ilceId;
             } else if (eslesmeTopoKendi[idx] !== undefined) {
               puan = eslesmeTopoKendi[idx]; adGoster = topoAdStr; ilGoster = topoIlStr; gosterIlceId = null;
-            } else if (topoAdStr && topoIlStr) {
-              puan = adPuanMap[normKeyStr] ?? 0; adGoster = topoAdStr; ilGoster = topoIlStr; gosterIlceId = null;
             } else {
-              // Kayıtsız feature — en yakın komşudan al (Cunda → Ayvalık gibi)
-              const komsу = enYakinKomsu(feature);
-              puan = komsу.puan; adGoster = komsу.ad; ilGoster = komsу.il; gosterIlceId = komsу.ilceId;
+              puan = topoAdStr && topoIlStr ? (adPuanMap[normKeyStr] ?? 0) : 0;
+              adGoster = topoAdStr; ilGoster = topoIlStr; gosterIlceId = null;
             }
 
             layer.on({
