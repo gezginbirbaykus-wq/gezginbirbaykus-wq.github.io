@@ -1589,7 +1589,29 @@
                 const guncelVeri   = guncelIlceId ? ilcelerHById[guncelIlceId] : null;
                 const guncelPuan   = guncelVeri ? guncelVeri.puan : (eslesmeTopoKendi[idx] ?? 0);
                 const guncelAd     = guncelVeri ? guncelVeri.ad : (eslesmeTopoAd[idx] || '');
-                const guncelIl     = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
+                let   guncelIl     = guncelVeri ? guncelVeri.il : (eslesmeTopoIl[idx] || '');
+
+                // İl boşsa en yakın kayıtlı feature'ın ilini otomatik doldur
+                if (!guncelIl) {
+                  const feat = ilceGeo.features[parseInt(idx)];
+                  const fc = feat.geometry.type === 'Polygon'
+                    ? feat.geometry.coordinates[0]
+                    : feat.geometry.coordinates[0][0];
+                  const cLon = fc.reduce((a,b)=>a+b[0],0)/fc.length;
+                  const cLat = fc.reduce((a,b)=>a+b[1],0)/fc.length;
+                  let minDist = Infinity;
+                  ilceGeo.features.forEach((f, fi) => {
+                    const fIl = eslesmeTopoIl[String(fi)] || '';
+                    if (!fIl) return;
+                    const rc = f.geometry.type === 'Polygon'
+                      ? f.geometry.coordinates[0]
+                      : f.geometry.coordinates[0][0];
+                    const fLon = rc.reduce((a,b)=>a+b[0],0)/rc.length;
+                    const fLat = rc.reduce((a,b)=>a+b[1],0)/rc.length;
+                    const d = (cLon-fLon)**2 + (cLat-fLat)**2;
+                    if (d < minDist) { minDist = d; guncelIl = fIl; }
+                  });
+                }
 
                 document.getElementById('harita-topo-ad-input').value = guncelAd;
                 document.getElementById('harita-topo-il-input').value = guncelIl;
