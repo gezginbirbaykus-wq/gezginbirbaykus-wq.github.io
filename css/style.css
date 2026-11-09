@@ -1206,6 +1206,10 @@ img { max-width: 100%; display: block; }
   gap: 4px;
 }
 
+.akordeon-iller[hidden] {
+  display: none;
+}
+
 .akordeon-il {
   border-radius: 10px;
   overflow: hidden;
