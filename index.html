@@ -80,7 +80,8 @@
         <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
         <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
         <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan geçtim</span>
-        <span><span class="hl-dot gezilmedi"></span> 0 — Gitmedim</span>
+        <span><span class="hl-dot" style="background:#ffffff;border:1.5px solid #aaa;"></span> 0 — Gitmedim</span>
+        <span><span class="hl-dot" style="background:#d8d4ce;border:1px solid #bbb;"></span> İşaretlenmedi</span>
       </div>
 
       <!-- SVG harita -->
@@ -468,16 +469,26 @@
             const topoAd = eslesmeTopoAd[idx] || '';
             const topoIl = eslesmeTopoIl[idx] || '';
             const normKey = hn(topoAd) + '_' + hn(topoIl);
-            const puan   = veri ? veri.puan
-                         : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
-                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0)
-                         : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
+
+            // Kayıtlı mı? (admin'de en az bir kez tıklanmış)
+            const kayitliMi = ilceId || eslesmeTopoKendi[idx] !== undefined || (topoAd && topoIl);
+
+            const puan = veri ? veri.puan
+                       : (eslesmeTopoKendi[idx] !== undefined ? eslesmeTopoKendi[idx]
+                       : (topoAd && topoIl ? (adPuanMap[normKey] ?? 0) : 0));
+
+            // Renk: puan>0 → renkli, puan=0+kayıtlı → beyaz, hiç kayıt yok → gri
+            const fillColor = puan > 0 ? puanRenk(puan)
+                            : kayitliMi ? '#ffffff'
+                            : '#d8d4ce';
+            const fillOpacity = puan > 0 ? 0.85 : kayitliMi ? 0.9 : 0.55;
+
             return {
-              fillColor:   puanRenk(puan),
-              fillOpacity: puanOpak(puan),
-              color:       '#b8a898',
-              weight:      0.5,
-              opacity:     1,
+              fillColor,
+              fillOpacity,
+              color:   '#b8a898',
+              weight:  0.5,
+              opacity: 1,
             };
           },
           onEachFeature: (feature, layer) => {
