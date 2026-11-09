@@ -46,90 +46,8 @@
 
   <!-- MAIN -->
   <main class="main-content" id="kesfet">
-    <!-- HARİTA -->
-    <div class="anasayfa-harita-wrap">
-      <h2 class="section-title">Gezi Haritam</h2>
-
-      <!-- İstatistikler -->
-      <div class="harita-stats-grid">
-        <div class="harita-stat"><div class="hs-renk" style="background:#1a7a3a;"></div><div><div class="hs-sayi" id="sayi-p5">—</div><div class="hs-etiket">Her Yer (5)</div></div></div>
-        <div class="harita-stat"><div class="hs-renk" style="background:#4CAF50;"></div><div><div class="hs-sayi" id="sayi-p4">—</div><div class="hs-etiket">Çok Gezdim (4)</div></div></div>
-        <div class="harita-stat"><div class="hs-renk" style="background:#8BC34A;"></div><div><div class="hs-sayi" id="sayi-p3">—</div><div class="hs-etiket">Orta (3)</div></div></div>
-        <div class="harita-stat"><div class="hs-renk" style="background:#FFC107;"></div><div><div class="hs-sayi" id="sayi-p2">—</div><div class="hs-etiket">Az (2)</div></div></div>
-        <div class="harita-stat"><div class="hs-renk" style="background:#FF7043;"></div><div><div class="hs-sayi" id="sayi-p1">—</div><div class="hs-etiket">Yoldan (1)</div></div></div>
-        <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi" id="sayi-toplam">—</div><div class="hs-etiket">Toplam İlçe</div></div></div>
-      </div>
-
-      <div class="harita-progress">
-        <div class="hp-label">
-          <span>Türkiye ilçelerini <strong id="progress-yuzde">0%</strong> oranında gezdim</span>
-          <span id="progress-metin" class="hp-alt"></span>
-        </div>
-        <div class="hp-bar-bg">
-          <div class="hp-bar" id="bar-p5" style="width:0%;background:#1a7a3a;"></div>
-          <div class="hp-bar" id="bar-p4" style="width:0%;background:#4CAF50;"></div>
-          <div class="hp-bar" id="bar-p3" style="width:0%;background:#8BC34A;"></div>
-          <div class="hp-bar" id="bar-p2" style="width:0%;background:#FFC107;"></div>
-          <div class="hp-bar" id="bar-p1" style="width:0%;background:#FF7043;"></div>
-        </div>
-      </div>
-
-      <div class="harita-legend">
-        <span><span class="hl-dot" style="background:#1a7a3a;"></span> 5 — Her yer</span>
-        <span><span class="hl-dot" style="background:#4CAF50;"></span> 4 — Çok</span>
-        <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
-        <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
-        <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan geçtim</span>
-        <span><span class="hl-dot" style="background:#ffffff;border:1.5px solid #aaa;"></span> 0 — Gitmedim</span>
-        <span><span class="hl-dot" style="background:#d8d4ce;border:1px solid #bbb;"></span> İşaretlenmedi</span>
-      </div>
-
-      <!-- SVG harita -->
-      <div id="h-yukle" style="display:flex;align-items:center;justify-content:center;height:460px;gap:12px;color:var(--brown-60);">
-        <div class="spinner"></div><p>Harita yükleniyor...</p>
-      </div>
-      <div id="h-leaflet" style="display:none;height:460px;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
-    </div>
 
     <div id="h-tooltip" class="h-tooltip"></div>
-
-    <!-- SIRBİSTAN HARİTA SECTION -->
-    <div class="harita-section" style="margin-top:40px;">
-
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
-        <h2 class="section-title" style="margin:0;">Sırbistan Belediye Haritası</h2>
-      </div>
-
-      <div class="harita-progress" id="srb-progress-wrap" style="margin-bottom:10px;">
-        <div class="hp-label">
-          <span>Sırbistan belediyelerini <strong id="srb-progress-yuzde">0%</strong> oranında gezdim</span>
-          <span id="srb-progress-metin" class="hp-alt"></span>
-        </div>
-        <div class="hp-bar-bg">
-          <div class="hp-bar" id="srb-bar-p5" style="width:0%;background:#1a7a3a;"></div>
-          <div class="hp-bar" id="srb-bar-p4" style="width:0%;background:#4CAF50;"></div>
-          <div class="hp-bar" id="srb-bar-p3" style="width:0%;background:#8BC34A;"></div>
-          <div class="hp-bar" id="srb-bar-p2" style="width:0%;background:#FFC107;"></div>
-          <div class="hp-bar" id="srb-bar-p1" style="width:0%;background:#FF7043;"></div>
-        </div>
-      </div>
-
-      <div class="harita-legend" style="margin-bottom:10px;">
-        <span><span class="hl-dot" style="background:#1a7a3a;"></span> 5 — Her yer</span>
-        <span><span class="hl-dot" style="background:#4CAF50;"></span> 4 — Çok</span>
-        <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
-        <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
-        <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan geçtim</span>
-        <span><span class="hl-dot" style="background:#ffffff;border:1.5px solid #aaa;"></span> 0 — Gitmedim</span>
-        <span><span class="hl-dot" style="background:#d8d4ce;border:1px solid #bbb;"></span> İşaretlenmedi</span>
-      </div>
-
-      <div id="srb-yukle" style="display:flex;align-items:center;justify-content:center;height:400px;gap:12px;color:var(--brown-60);">
-        <div class="spinner"></div><p>Harita yükleniyor...</p>
-      </div>
-      <div id="srb-leaflet" style="display:none;height:400px;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
-    </div>
-
     <div id="srb-tooltip" class="h-tooltip"></div>
 
     <div class="kesfet-header">
@@ -277,9 +195,83 @@
 
         ulkeler.forEach(ulke => {
           const ulkeIller = iller.filter(i => i.ulkeId === ulke.id);
+          const isTurkiye  = ulke.ad.replace(/^\W+/,'').toLowerCase().startsWith('türkiye');
+          const isSirbistan = ulke.ad.toLowerCase().includes('sırbistan') || ulke.ad.toLowerCase().includes('sirbistan') || ulke.ad.toLowerCase().includes('srbija') || ulke.ad.toLowerCase().includes('serbia');
 
           const ulkeEl = document.createElement('div');
           ulkeEl.className = 'akordeon-ulke';
+
+          // Harita HTML'i — Türkiye veya Sırbistan için
+          let haritaHTML = '';
+          if (isTurkiye) {
+            haritaHTML = `
+            <div class="akordeon-harita-wrap" id="tr-harita-wrap">
+              <div class="harita-stats-grid">
+                <div class="harita-stat"><div class="hs-renk" style="background:#1a7a3a;"></div><div><div class="hs-sayi" id="sayi-p5">—</div><div class="hs-etiket">Her Yer (5)</div></div></div>
+                <div class="harita-stat"><div class="hs-renk" style="background:#4CAF50;"></div><div><div class="hs-sayi" id="sayi-p4">—</div><div class="hs-etiket">Çok Gezdim (4)</div></div></div>
+                <div class="harita-stat"><div class="hs-renk" style="background:#8BC34A;"></div><div><div class="hs-sayi" id="sayi-p3">—</div><div class="hs-etiket">Orta (3)</div></div></div>
+                <div class="harita-stat"><div class="hs-renk" style="background:#FFC107;"></div><div><div class="hs-sayi" id="sayi-p2">—</div><div class="hs-etiket">Az (2)</div></div></div>
+                <div class="harita-stat"><div class="hs-renk" style="background:#FF7043;"></div><div><div class="hs-sayi" id="sayi-p1">—</div><div class="hs-etiket">Yoldan (1)</div></div></div>
+                <div class="harita-stat"><div class="hs-renk gezilmedi"></div><div><div class="hs-sayi" id="sayi-toplam">—</div><div class="hs-etiket">Toplam İlçe</div></div></div>
+              </div>
+              <div class="harita-progress">
+                <div class="hp-label">
+                  <span>Türkiye ilçelerini <strong id="progress-yuzde">0%</strong> oranında gezdim</span>
+                  <span id="progress-metin" class="hp-alt"></span>
+                </div>
+                <div class="hp-bar-bg">
+                  <div class="hp-bar" id="bar-p5" style="width:0%;background:#1a7a3a;"></div>
+                  <div class="hp-bar" id="bar-p4" style="width:0%;background:#4CAF50;"></div>
+                  <div class="hp-bar" id="bar-p3" style="width:0%;background:#8BC34A;"></div>
+                  <div class="hp-bar" id="bar-p2" style="width:0%;background:#FFC107;"></div>
+                  <div class="hp-bar" id="bar-p1" style="width:0%;background:#FF7043;"></div>
+                </div>
+              </div>
+              <div class="harita-legend">
+                <span><span class="hl-dot" style="background:#1a7a3a;"></span> 5 — Her yer</span>
+                <span><span class="hl-dot" style="background:#4CAF50;"></span> 4 — Çok</span>
+                <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
+                <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
+                <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan</span>
+                <span><span class="hl-dot" style="background:#fff;border:1.5px solid #aaa;"></span> Gitmedim</span>
+                <span><span class="hl-dot" style="background:#d8d4ce;border:1px solid #bbb;"></span> İşaretlenmedi</span>
+              </div>
+              <div id="h-yukle" style="display:flex;align-items:center;justify-content:center;height:460px;gap:12px;color:var(--brown-60);">
+                <div class="spinner"></div><p>Harita yükleniyor...</p>
+              </div>
+              <div id="h-leaflet" style="display:none;height:460px;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
+            </div>`;
+          } else if (isSirbistan) {
+            haritaHTML = `
+            <div class="akordeon-harita-wrap" id="srb-harita-wrap">
+              <div class="harita-progress">
+                <div class="hp-label">
+                  <span>Sırbistan belediyelerini <strong id="srb-progress-yuzde">0%</strong> oranında gezdim</span>
+                  <span id="srb-progress-metin" class="hp-alt"></span>
+                </div>
+                <div class="hp-bar-bg">
+                  <div class="hp-bar" id="srb-bar-p5" style="width:0%;background:#1a7a3a;"></div>
+                  <div class="hp-bar" id="srb-bar-p4" style="width:0%;background:#4CAF50;"></div>
+                  <div class="hp-bar" id="srb-bar-p3" style="width:0%;background:#8BC34A;"></div>
+                  <div class="hp-bar" id="srb-bar-p2" style="width:0%;background:#FFC107;"></div>
+                  <div class="hp-bar" id="srb-bar-p1" style="width:0%;background:#FF7043;"></div>
+                </div>
+              </div>
+              <div class="harita-legend">
+                <span><span class="hl-dot" style="background:#1a7a3a;"></span> 5 — Her yer</span>
+                <span><span class="hl-dot" style="background:#4CAF50;"></span> 4 — Çok</span>
+                <span><span class="hl-dot" style="background:#8BC34A;"></span> 3 — Orta</span>
+                <span><span class="hl-dot" style="background:#FFC107;"></span> 2 — Az</span>
+                <span><span class="hl-dot" style="background:#FF7043;"></span> 1 — Yoldan</span>
+                <span><span class="hl-dot" style="background:#fff;border:1.5px solid #aaa;"></span> Gitmedim</span>
+                <span><span class="hl-dot" style="background:#d8d4ce;border:1px solid #bbb;"></span> İşaretlenmedi</span>
+              </div>
+              <div id="srb-yukle" style="display:flex;align-items:center;justify-content:center;height:400px;gap:12px;color:var(--brown-60);">
+                <div class="spinner"></div><p>Harita yükleniyor...</p>
+              </div>
+              <div id="srb-leaflet" style="display:none;height:400px;border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.07);"></div>
+            </div>`;
+          }
 
           // Ülke başlığı
           ulkeEl.innerHTML = `
@@ -293,6 +285,7 @@
               <span class="akordeon-ok">›</span>
             </button>
             <div class="akordeon-iller" hidden>
+              ${haritaHTML}
               ${ulkeIller.length === 0
                 ? '<p class="akordeon-bos">Henüz il eklenmemiş.</p>'
                 : ulkeIller.map(il => {
@@ -330,23 +323,40 @@
 
           root.appendChild(ulkeEl);
 
-          // Ülke toggle
           const ulkeBtn = ulkeEl.querySelector('.akordeon-ulke-btn');
           const ulkeIllerDiv = ulkeEl.querySelector('.akordeon-iller');
-          
-          // İlk ülkeyi otomatik aç
-          if (root.children.length === 1) {
+
+          // Türkiye ilk ve varsayılan açık
+          const ilkUlke = root.children.length === 1;
+          if (ilkUlke) {
             ulkeBtn.setAttribute('aria-expanded', 'true');
             ulkeBtn.classList.add('acik');
             ulkeIllerDiv.removeAttribute('hidden');
+            // Türkiye haritasını hemen yükle
+            if (isTurkiye) setTimeout(() => haritaYukle(), 50);
+            if (isSirbistan) setTimeout(() => srbHaritaYukle(), 50);
           }
 
+          let haritaYuklendi = false;
           ulkeBtn.addEventListener('click', () => {
             const acik = ulkeBtn.getAttribute('aria-expanded') === 'true';
             ulkeBtn.setAttribute('aria-expanded', !acik);
             ulkeBtn.classList.toggle('acik', !acik);
-            if (acik) ulkeIllerDiv.setAttribute('hidden', '');
-            else ulkeIllerDiv.removeAttribute('hidden');
+            if (acik) {
+              ulkeIllerDiv.setAttribute('hidden', '');
+            } else {
+              ulkeIllerDiv.removeAttribute('hidden');
+              // Haritayı ilk açılışta yükle
+              if (!haritaYuklendi) {
+                haritaYuklendi = true;
+                if (isTurkiye) setTimeout(() => haritaYukle(), 50);
+                if (isSirbistan) setTimeout(() => srbHaritaYukle(), 50);
+              } else {
+                // Zaten yüklüyse invalidateSize çağır
+                if (isTurkiye && window._trHarita) window._trHarita.invalidateSize();
+                if (isSirbistan && window._srbHarita) window._srbHarita.invalidateSize();
+              }
+            }
           });
 
           // İl togglelar
@@ -484,6 +494,7 @@
           maxBounds: [[33.5, 22.0], [44.5, 48.0]],
           maxBoundsViscosity: 0.85,
         });
+        window._trHarita = harita;
 
         // Reset (home) butonu
         const ResetControl = L.Control.extend({
@@ -606,9 +617,7 @@
         .trim();
     }
 
-    haritaYukle();
-
-    // ===== SIRBİSTAN HARİTASI =====
+    // haritaYukle ve srbHaritaYukle accordion tarafından tetikleniyor
     async function srbHaritaYukle() {
       try {
         const [eslesmeSnap, opstineGeo, okruziGeo] = await Promise.all([
@@ -668,6 +677,7 @@
           maxBounds: [[41.5, 17.5], [46.5, 24.5]],
           maxBoundsViscosity: 0.85,
         });
+        window._srbHarita = srbHarita;
 
         // Reset butonu
         const SrbReset = L.Control.extend({
@@ -742,7 +752,8 @@
       }
     }
 
-    srbHaritaYukle();
+    }
+
   </script>
 
 </body>
