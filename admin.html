@@ -57,8 +57,7 @@
           <button class="admin-tab active" data-tab="ulke">Ülkeler</button>
           <button class="admin-tab" data-tab="il">İller</button>
           <button class="admin-tab" data-tab="ilce">İlçeler</button>
-          <button class="admin-tab" data-tab="harita">🗺️ Harita</button>
-          <button class="admin-tab" data-tab="srb-harita">🗺️ Sırbistan</button>
+          <button class="admin-tab" data-tab="harita">🗺️ Haritalar</button>
         </div>
         <button id="cikis-btn" class="btn btn-secondary btn-sm">Çıkış Yap</button>
       </div>
@@ -352,6 +351,15 @@
 
       <!-- ===== HARİTA TAB ===== -->
       <div class="tab-panel" id="tab-harita">
+
+        <!-- Ülke Geçiş Butonları -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <button class="btn btn-primary btn-sm harita-ulke-btn active" id="harita-ulke-tr" onclick="haritaUlkeSec('tr')" style="width:auto;">🇹🇷 Türkiye</button>
+          <button class="btn btn-secondary btn-sm harita-ulke-btn" id="harita-ulke-srb" onclick="haritaUlkeSec('srb')" style="width:auto;">🇷🇸 Sırbistan</button>
+        </div>
+
+        <!-- Türkiye Paneli -->
+        <div id="harita-panel-tr">
         <div class="admin-card">
           <h3>İlçe Haritası Düzenleyici</h3>
           <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
@@ -419,10 +427,10 @@
             </div>
           </div>
         </div>
-      </div><!-- /tab-harita -->
+        </div><!-- /harita-panel-tr -->
 
-      <!-- ===== SIRBİSTAN HARİTA TAB ===== -->
-      <div class="tab-panel" id="tab-srb-harita">
+        <!-- Sırbistan Paneli -->
+        <div id="harita-panel-srb" style="display:none;">
         <div class="admin-card">
           <h3>Sırbistan Belediye Haritası Düzenleyici</h3>
           <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">
@@ -467,8 +475,9 @@
             <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#ffffff;border:1.5px solid #aaa;border-radius:2px;"></span> 0 — Gitmedim</div>
             <div style="display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted);"><span style="display:inline-block;width:14px;height:10px;background:#d8d4ce;border:1px solid #bbb;border-radius:2px;"></span> İşaretlenmedi</div>
           </div>
-        </div>
-      </div><!-- /tab-srb-harita -->
+        </div><!-- /harita-panel-srb -->
+
+      </div><!-- /tab-harita -->
 
     </div>
   </div>
@@ -1445,17 +1454,6 @@
     }
 
     // ===== HARİTA SEKMESİ (Leaflet + GeoJSON) =====
-    let adminHaritaYuklendi = false;
-
-    document.querySelectorAll('.admin-tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (btn.dataset.tab === 'harita' && !adminHaritaYuklendi) {
-          adminHaritaYuklendi = true;
-          setTimeout(() => adminHaritaYukle(), 50);
-        }
-      });
-    });
-
     async function adminHaritaYukle() {
       try {
         const [ilceSnap, ilSnap, eslesmeSnap, ilceGeo, ilGeo] = await Promise.all([
@@ -1786,13 +1784,31 @@
         .trim();
     }
 
-    // ===== SIRBİSTAN HARİTA YÜKLEME =====
+    // ===== HARİTA ÜLKE GEÇİŞİ =====
     let srbAdminYuklendi = false;
+    let trAdminYuklendi  = false;
+
+    window.haritaUlkeSec = function(ulke) {
+      document.getElementById('harita-panel-tr').style.display  = ulke === 'tr'  ? '' : 'none';
+      document.getElementById('harita-panel-srb').style.display = ulke === 'srb' ? '' : 'none';
+      document.getElementById('harita-ulke-tr').className  = 'btn btn-sm harita-ulke-btn' + (ulke==='tr'  ? ' btn-primary'   : ' btn-secondary');
+      document.getElementById('harita-ulke-srb').className = 'btn btn-sm harita-ulke-btn' + (ulke==='srb' ? ' btn-primary'   : ' btn-secondary');
+      if (ulke === 'srb' && !srbAdminYuklendi) {
+        srbAdminYuklendi = true;
+        setTimeout(() => srbAdminHaritaYukle(), 50);
+      } else if (ulke === 'tr' && !trAdminYuklendi) {
+        trAdminYuklendi = true;
+        // Türkiye haritası tab açılınca zaten yükleniyor
+        setTimeout(() => { if (window._adminTrHarita) window._adminTrHarita.invalidateSize(); }, 100);
+      }
+    };
+
+    // Türkiye haritası tab açılınca yükle
     document.querySelectorAll('.admin-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (btn.dataset.tab === 'srb-harita' && !srbAdminYuklendi) {
-          srbAdminYuklendi = true;
-          setTimeout(() => srbAdminHaritaYukle(), 50);
+        if (btn.dataset.tab === 'harita' && !trAdminYuklendi) {
+          trAdminYuklendi = true;
+          setTimeout(() => adminHaritaYukle(), 50);
         }
       });
     });
